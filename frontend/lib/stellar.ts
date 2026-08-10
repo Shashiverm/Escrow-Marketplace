@@ -149,3 +149,40 @@ export function txExplorerUrl(txHash: string): string {
 export function contractExplorerUrl(contractId: string): string {
   return `${NETWORK.explorerUrl}/contract/${contractId}`;
 }
+
+// ── Contract Events Fetcher ──────────────────────
+
+/**
+ * Fetch events emitted by a specific Soroban contract.
+ */
+export async function getContractEvents(
+  contractId: string,
+  startLedger?: number
+): Promise<SorobanEvent[]> {
+  try {
+    const StellarSdk = await import("@stellar/stellar-sdk");
+    const server = new StellarSdk.SorobanRpc.Server(NETWORK.rpcUrl);
+    const response = await server.getEvents({
+      startLedger: startLedger || 0,
+      filters: [
+        {
+          type: "contract",
+          contractIds: [contractId],
+        },
+      ],
+      limit: 10,
+    });
+
+    return (response.events || []).map((ev: any) => ({
+      id: ev.id || String(Math.random()),
+      contractId: ev.contractId || contractId,
+      topic: ev.topic || [],
+      value: ev.value,
+      ledger: ev.ledger || 0,
+      timestamp: Date.now(),
+    }));
+  } catch (err) {
+    console.warn("Failed to fetch contract events from RPC:", err);
+    return [];
+  }
+}
