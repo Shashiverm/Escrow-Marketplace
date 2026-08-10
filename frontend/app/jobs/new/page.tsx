@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@/hooks/useWallet";
+import { postJob } from "@/lib/contracts";
 
 export default function PostJobPage() {
   const router = useRouter();
+  const { publicKey, walletType, isConnected } = useWallet();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    budget: "",
+    budget: "10000",
     milestones: "3",
   });
 
@@ -19,34 +23,84 @@ export default function PostJobPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!formData.title || !formData.description || !formData.budget) return;
+
+    if (!isConnected || !publicKey || !walletType) {
+      setError("Please connect your Stellar wallet before posting a job.");
+      return;
+    }
+
     setIsSubmitting(true);
+    setError(null);
 
     try {
-      // In production: invoke JobRegistry.post_job via Stellar SDK
-      // const tx = await contracts.postJob(
-      //   formData.title,
-      //   formData.description,
-      //   parseInt(formData.budget),
-      //   parseInt(formData.milestones)
-      // );
+      const budgetNum = parseInt(formData.budget, 10);
+      const milestonesNum = parseInt(formData.milestones, 10);
 
-      // Simulate submission delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      router.push("/jobs");
+      const result = await postJob(
+        publicKey,
+        walletType,
+        formData.title,
+        formData.description,
+        budgetNum,
+        milestonesNum
+      );
+
+      console.log("Job posted successfully:", result);
+      router.push(`/jobs/${result.job.id}`);
     } catch (err) {
-      console.error("Job posting failed:", err);
+      const msg = err instanceof Error ? err.message : "Failed to post job";
+      setError(msg);
+      console.error("Job posting error:", err);
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <div className="container" style={{ maxWidth: "700px" }}>
+    <div className="container" style={{ maxWidth: "720px" }}>
       <div className="page-header">
         <h1 className="page-title">Post a New Job</h1>
       </div>
 
       <div className="card" style={{ padding: "32px" }}>
+        {error && (
+          <div
+            style={{
+              padding: "12px",
+              borderRadius: "8px",
+              background: "var(--error-bg)",
+              color: "var(--error)",
+              fontSize: "0.88rem",
+              marginBottom: "20px",
+            }}
+          >
+            ⚠️ {error}
+          </div>
+        )}
+
+        {!isConnected && (
+          <div
+            style={{
+              padding: "14px",
+              borderRadius: "10px",
+              background: "var(--info-bg)",
+              color: "var(--info)",
+              fontSize: "0.9rem",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <span>🚀</span>
+            <div>
+              <strong>Wallet Connection Required</strong>
+              <div>Connect your Stellar wallet (Freighter, xBull, Lobstr, Albedo) to sign job creation.</div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} id="post-job-form">
           <div className="form-group">
             <label className="form-label" htmlFor="job-title">
@@ -56,7 +110,7 @@ export default function PostJobPage() {
               id="job-title"
               type="text"
               className="form-input"
-              placeholder="e.g., Smart Contract Security Audit"
+              placeholder="e.g., Soroban Smart Contract Audit & Frontend Integration"
               value={formData.title}
               onChange={(e) => updateField("title", e.target.value)}
               required
@@ -70,7 +124,7 @@ export default function PostJobPage() {
             <textarea
               id="job-description"
               className="form-textarea"
-              placeholder="Describe the project scope, deliverables, and any technical requirements…"
+              placeholder="Describe the project scope, required skills, deliverables, and acceptance criteria…"
               value={formData.description}
               onChange={(e) => updateField("description", e.target.value)}
               style={{ minHeight: "180px" }}
@@ -81,7 +135,7 @@ export default function PostJobPage() {
           <div className="grid-2">
             <div className="form-group">
               <label className="form-label" htmlFor="job-budget">
-                Budget (XLM)
+                Total Budget (XLM)
               </label>
               <input
                 id="job-budget"
@@ -121,6 +175,7 @@ export default function PostJobPage() {
                 marginBottom: "24px",
                 padding: "16px",
                 background: "var(--bg-glass)",
+                border: "1px solid var(--border-light)",
               }}
             >
               <div
@@ -147,11 +202,11 @@ export default function PostJobPage() {
           <button
             type="submit"
             className="btn btn-primary btn-lg"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isConnected}
             style={{ width: "100%" }}
             id="submit-job-btn"
           >
-            {isSubmitting ? "Posting Job…" : "Post Job & Lock Budget"}
+            {isSubmitting ? "Signing & Deploying Job…" : "Post Job with Connected Wallet"}
           </button>
 
           <p
@@ -162,9 +217,9 @@ export default function PostJobPage() {
               color: "var(--text-muted)",
             }}
           >
-            Your budget will be locked in escrow upon job creation.
+            Job listing is stored on Stellar Soroban Testnet RPC.
             <br />
-            Requires Freighter wallet to sign the transaction.
+            Requires signature from your connected wallet.
           </p>
         </form>
       </div>

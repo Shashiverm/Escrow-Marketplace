@@ -30,7 +30,23 @@ export default function RootLayout({
                 >
                   Stellar
                 </a>{" "}
-                &middot; Powered by Soroban Smart Contracts &middot; MIT License
+                &middot; Powered by{" "}
+                <a
+                  href="https://developers.stellar.org/docs/build/smart-contracts/overview"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Soroban Smart Contracts
+                </a>{" "}
+                &middot;{" "}
+                <a
+                  href="https://github.com/Shashiverm/Escrow-Marketplace"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub Repository
+                </a>{" "}
+                &middot; MIT License
               </p>
             </div>
           </footer>

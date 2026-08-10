@@ -1,44 +1,15 @@
 /**
- * Contract interaction layer.
+ * Typed Soroban Contract Interaction Layer
  *
- * Provides typed wrappers around each Soroban contract's public functions.
- * In production these call `buildContractTx` from `@/lib/stellar` and sign
- * via Freighter.  For the demo they return mock data.
+ * Provides functions for posting jobs, submitting bids, accepting bids,
+ * releasing escrow milestones, refunding escrows, and fetching reputation.
  */
 
-import { CONTRACTS, buildContractTx } from "./stellar";
+import { CONTRACTS, executeContractTx } from "./stellar";
+import { store, Job, Bid, EscrowRecord, MarketplaceEvent } from "./store";
+import { WalletType } from "./wallets";
 
-// ── Types ────────────────────────────────────────
-
-export interface Job {
-  id: number;
-  client: string;
-  title: string;
-  description: string;
-  budget: number;
-  milestoneCount: number;
-  status: "open" | "progress" | "completed" | "cancelled";
-  freelancer: string;
-  bidCount: number;
-}
-
-export interface Bid {
-  freelancer: string;
-  amount: number;
-  proposal: string;
-}
-
-export interface EscrowData {
-  jobId: number;
-  client: string;
-  freelancer: string;
-  totalAmount: number;
-  milestoneCount: number;
-  perMilestone: number;
-  milestonesApproved: number;
-  milestonesReleased: number;
-  status: "active" | "completed" | "refunded";
-}
+export type { Job, Bid, EscrowRecord, MarketplaceEvent };
 
 export interface ReputationScore {
   jobsCompleted: number;
@@ -47,96 +18,115 @@ export interface ReputationScore {
   totalSpent: number;
 }
 
-// ── Job Registry ─────────────────────────────────
+// ── Job Registry Calls ───────────────────────────
 
 export async function postJob(
   publicKey: string,
+  walletType: WalletType,
   title: string,
   description: string,
   budget: number,
   milestoneCount: number
-) {
-  return buildContractTx(
+): Promise<{ job: Job; txHash: string }> {
+  // 1. Build and sign transaction with real connected wallet
+  const txResult = await executeContractTx(
     CONTRACTS.jobRegistry,
     "post_job",
     [publicKey, title, description, budget, milestoneCount],
-    publicKey
+    publicKey,
+    walletType
   );
+
+  // 2. Persist in state store
+  const newJob = store.addJob(
+    {
+      client: publicKey,
+      title,
+      description,
+      budget,
+      milestoneCount,
+    },
+    txResult.hash
+  );
+
+  return { job: newJob, txHash: txResult.hash };
 }
 
 export async function placeBid(
   publicKey: string,
+  walletType: WalletType,
   jobId: number,
   amount: number,
   proposal: string
-) {
-  return buildContractTx(
+): Promise<{ bid: Bid; txHash: string }> {
+  const txResult = await executeContractTx(
     CONTRACTS.jobRegistry,
     "place_bid",
     [publicKey, jobId, amount, proposal],
-    publicKey
+    publicKey,
+    walletType
   );
+
+  const newBid = store.addBid(jobId, publicKey, amount, proposal, txResult.hash);
+  return { bid: newBid, txHash: txResult.hash };
 }
 
 export async function acceptBid(
   publicKey: string,
+  walletType: WalletType,
   jobId: number,
   bidIndex: number
-) {
-  return buildContractTx(
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
     CONTRACTS.jobRegistry,
     "accept_bid",
     [publicKey, jobId, bidIndex],
-    publicKey
+    publicKey,
+    walletType
   );
+
+  const success = store.acceptBid(jobId, bidIndex, publicKey, txResult.hash);
+  return { success, txHash: txResult.hash };
 }
 
-// ── Escrow ───────────────────────────────────────
+// ── Escrow Calls ─────────────────────────────────
 
-export async function fundEscrow(
+export async function approveMilestone(
   publicKey: string,
-  jobId: number,
-  freelancer: string,
-  amount: number,
-  milestoneCount: number
-) {
-  return buildContractTx(
-    CONTRACTS.escrow,
-    "fund_escrow",
-    [publicKey, jobId, freelancer, amount, milestoneCount],
-    publicKey
-  );
-}
-
-export async function approveMilestone(publicKey: string, jobId: number) {
-  return buildContractTx(
+  walletType: WalletType,
+  jobId: number
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
     CONTRACTS.escrow,
     "approve_milestone",
     [publicKey, jobId],
-    publicKey
+    publicKey,
+    walletType
   );
+
+  const success = store.approveMilestone(jobId, publicKey, txResult.hash);
+  return { success, txHash: txResult.hash };
 }
 
-export async function refundEscrow(publicKey: string, jobId: number) {
-  return buildContractTx(
+export async function refundEscrow(
+  publicKey: string,
+  walletType: WalletType,
+  jobId: number
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
     CONTRACTS.escrow,
     "refund",
     [publicKey, jobId],
-    publicKey
+    publicKey,
+    walletType
   );
+
+  const success = store.refundEscrow(jobId, publicKey, txResult.hash);
+  return { success, txHash: txResult.hash };
 }
 
-// ── Reputation ───────────────────────────────────
+// ── Reputation Calls ─────────────────────────────
 
-export async function getReputation(
-  address: string
-): Promise<ReputationScore> {
-  // In production: read contract storage via RPC
-  // For demo: return mock data
-  return {
-    jobsCompleted: 0,
-    totalEarned: 0,
-    jobsFunded: 0,
-    totalSpent: 0,
-  };
+export async function getReputation(address: string): Promise<ReputationScore> {
+  return store.getReputation(address);
 }

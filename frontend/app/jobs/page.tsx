@@ -1,120 +1,115 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { JobCard } from "@/components/JobCard";
-
-/** Mock job data — replace with contract reads in production */
-const MOCK_JOBS = [
-  {
-    id: 0,
-    title: "Smart Contract Security Audit",
-    description:
-      "Need a thorough security audit of three Soroban smart contracts (escrow, registry, reputation). Must identify vulnerabilities, suggest fixes, and provide a detailed report.",
-    budget: 5000,
-    milestones: 2,
-    status: "open" as const,
-    bidCount: 3,
-    client: "GBCDEF1234567890ABCDEF1234567890ABCDEF123456",
-  },
-  {
-    id: 1,
-    title: "DeFi Dashboard Frontend",
-    description:
-      "Build a responsive Next.js dashboard for monitoring DeFi positions on Stellar. Includes real-time charts, portfolio tracking, and wallet integration with Freighter.",
-    budget: 12000,
-    milestones: 4,
-    status: "progress" as const,
-    bidCount: 7,
-    client: "GDEF567890ABCDEF1234567890ABCDEF1234567890AB",
-  },
-  {
-    id: 2,
-    title: "Cross-Chain Bridge Protocol",
-    description:
-      "Design and implement a bridge protocol between Stellar and Ethereum for transferring wrapped assets. Requires deep knowledge of both ecosystems.",
-    budget: 25000,
-    milestones: 6,
-    status: "open" as const,
-    bidCount: 2,
-    client: "GHIJ890ABCDEF1234567890ABCDEF1234567890ABCD",
-  },
-  {
-    id: 3,
-    title: "NFT Marketplace on Soroban",
-    description:
-      "Create a full-featured NFT marketplace with minting, listing, bidding, and royalty distribution using Soroban smart contracts.",
-    budget: 18000,
-    milestones: 5,
-    status: "open" as const,
-    bidCount: 5,
-    client: "GKLM234567890ABCDEF1234567890ABCDEF12345678",
-  },
-  {
-    id: 4,
-    title: "Payment Gateway Integration",
-    description:
-      "Integrate Stellar payments into an existing e-commerce platform. Support XLM and USDC with automatic conversion and settlement.",
-    budget: 8000,
-    milestones: 3,
-    status: "completed" as const,
-    bidCount: 4,
-    client: "GNOP567890ABCDEF1234567890ABCDEF1234567890AB",
-  },
-  {
-    id: 5,
-    title: "Mobile Wallet App (React Native)",
-    description:
-      "Develop a mobile wallet application using React Native with support for Stellar accounts, token management, and QR code payments.",
-    budget: 15000,
-    milestones: 4,
-    status: "progress" as const,
-    bidCount: 6,
-    client: "GQRS890ABCDEF1234567890ABCDEF1234567890ABCD",
-  },
-];
+import { store, Job } from "@/lib/store";
+import Link from "next/link";
 
 type Filter = "all" | "open" | "progress" | "completed";
 
 export default function JobsPage() {
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const filtered =
-    filter === "all"
-      ? MOCK_JOBS
-      : MOCK_JOBS.filter((j) => j.status === filter);
+  useEffect(() => {
+    function load() {
+      setJobs(store.getJobs());
+    }
+    load();
+    const interval = setInterval(load, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filtered = jobs.filter((job) => {
+    const matchesFilter = filter === "all" ? true : job.status === filter;
+    const matchesSearch =
+      searchTerm === "" ||
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <div className="container">
-      <div className="page-header">
-        <h1 className="page-title">Browse Jobs</h1>
-        <div className="filter-bar">
-          {(["all", "open", "progress", "completed"] as Filter[]).map((f) => (
-            <button
-              key={f}
-              className={`filter-btn ${filter === f ? "active" : ""}`}
-              onClick={() => setFilter(f)}
-              id={`filter-${f}`}
-            >
-              {f === "all"
-                ? "All"
-                : f === "progress"
-                ? "In Progress"
-                : f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
+      <div className="page-header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+          <div>
+            <h1 className="page-title">Browse Escrow Jobs</h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginTop: "4px" }}>
+              Milestone-funded smart contract positions on Stellar Soroban
+            </p>
+          </div>
+          <Link href="/jobs/new" className="btn btn-primary" id="post-job-cta">
+            + Post New Job
+          </Link>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+            flexWrap: "wrap",
+            gap: "12px",
+            alignItems: "center",
+          }}
+        >
+          <div className="filter-bar">
+            {(["all", "open", "progress", "completed"] as Filter[]).map((f) => (
+              <button
+                key={f}
+                className={`filter-btn ${filter === f ? "active" : ""}`}
+                onClick={() => setFilter(f)}
+                id={`filter-${f}`}
+              >
+                {f === "all"
+                  ? "All Jobs"
+                  : f === "progress"
+                  ? "In Progress"
+                  : f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="text"
+            className="form-input"
+            placeholder="🔍 Search jobs by keyword..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ maxWidth: "300px", padding: "8px 14px", fontSize: "0.88rem" }}
+          />
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🔍</div>
-          <h3>No jobs found</h3>
-          <p>Try a different filter or post a new job.</p>
+        <div className="empty-state card" style={{ padding: "48px 24px", textAlign: "center" }}>
+          <div className="empty-state-icon" style={{ fontSize: "2.5rem", marginBottom: "12px" }}>
+            🔍
+          </div>
+          <h3>No matching jobs found</h3>
+          <p style={{ color: "var(--text-secondary)", marginTop: "6px", marginBottom: "20px" }}>
+            Try adjusting your search query or status filter.
+          </p>
+          <Link href="/jobs/new" className="btn btn-secondary" id="empty-state-post-btn">
+            Post a New Job
+          </Link>
         </div>
       ) : (
         <div className="jobs-grid">
           {filtered.map((job) => (
-            <JobCard key={job.id} {...job} />
+            <JobCard
+              key={job.id}
+              id={job.id}
+              title={job.title}
+              description={job.description}
+              budget={job.budget}
+              milestones={job.milestoneCount}
+              status={job.status}
+              bidCount={job.bidCount}
+              client={job.client}
+            />
           ))}
         </div>
       )}

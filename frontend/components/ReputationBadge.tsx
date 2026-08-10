@@ -7,31 +7,40 @@ interface ReputationBadgeProps {
   totalSpent: number;
 }
 
-/**
- * Display reputation score and stats for a user.
- */
 export function ReputationBadge({
   jobsCompleted,
   totalEarned,
   jobsFunded,
   totalSpent,
 }: ReputationBadgeProps) {
-  // Composite score: completed jobs weighted more heavily
   const totalJobs = jobsCompleted + jobsFunded;
-  const score = totalJobs > 0 ? Math.min(totalJobs * 10, 100) : 0;
+  const score = totalJobs > 0 ? Math.min(jobsCompleted * 15 + jobsFunded * 10, 100) : 0;
+
+  function getRank(s: number) {
+    if (s >= 80) return { title: "Diamond Master", emoji: "💎", color: "#22d3ee" };
+    if (s >= 50) return { title: "Gold Specialist", emoji: "🥇", color: "#f59e0b" };
+    if (s >= 25) return { title: "Silver Freelancer", emoji: "🥈", color: "#94a3b8" };
+    return { title: "Bronze Contributor", emoji: "🥉", color: "#cd7f32" };
+  }
+
+  const rank = getRank(score);
 
   return (
     <div className="reputation-badge card">
       <div>
-        <div className="reputation-score">{score}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="reputation-score">{score}</div>
+          <span style={{ fontSize: "1.5rem" }}>{rank.emoji}</span>
+        </div>
         <div
           style={{
             fontSize: "0.85rem",
-            color: "var(--text-muted)",
+            color: rank.color,
+            fontWeight: 600,
             marginTop: "4px",
           }}
         >
-          Reputation Score
+          {rank.title}
         </div>
       </div>
 

@@ -1,131 +1,178 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { ReputationBadge } from "@/components/ReputationBadge";
-
-/** Mock profile data — replace with wallet + contract reads */
-const MOCK_PROFILE = {
-  address: "GABCDEF1234567890ABCDEF1234567890ABCDEF1234",
-  reputation: {
-    jobsCompleted: 7,
-    totalEarned: 42500,
-    jobsFunded: 3,
-    totalSpent: 25000,
-  },
-  recentJobs: [
-    {
-      id: 1,
-      title: "DeFi Dashboard Frontend",
-      role: "Freelancer",
-      amount: 12000,
-      status: "progress",
-    },
-    {
-      id: 4,
-      title: "Payment Gateway Integration",
-      role: "Freelancer",
-      amount: 8000,
-      status: "completed",
-    },
-    {
-      id: 2,
-      title: "Cross-Chain Bridge Protocol",
-      role: "Client",
-      amount: 25000,
-      status: "open",
-    },
-  ],
-};
-
-const STATUS_CLASS: Record<string, string> = {
-  open: "badge-open",
-  progress: "badge-progress",
-  completed: "badge-completed",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  open: "Open",
-  progress: "In Progress",
-  completed: "Completed",
-};
+import { useWallet } from "@/hooks/useWallet";
+import { store, Job, Bid } from "@/lib/store";
+import { getReputation } from "@/lib/contracts";
+import { truncateAddress } from "@/lib/stellar";
+import Link from "next/link";
 
 export default function ProfilePage() {
-  const profile = MOCK_PROFILE;
+  const { publicKey, balance, walletType, isConnected, connect, availableWallets } = useWallet();
+  const [reputation, setReputation] = useState({
+    jobsCompleted: 0,
+    totalEarned: 0,
+    jobsFunded: 0,
+    totalSpent: 0,
+  });
+  const [myJobs, setMyJobs] = useState<Job[]>([]);
+  const [myBids, setMyBids] = useState<{ job: Job; bid: Bid }[]>([]);
+
+  useEffect(() => {
+    if (!publicKey) return;
+
+    // Load reputation
+    getReputation(publicKey).then(setReputation);
+
+    // Load user's posted jobs & bids
+    const allJobs = store.getJobs();
+    const posted = allJobs.filter((j) => j.client.toLowerCase() === publicKey.toLowerCase());
+    setMyJobs(posted);
+
+    const userBids: { job: Job; bid: Bid }[] = [];
+    allJobs.forEach((job) => {
+      const bids = store.getBids(job.id);
+      bids.forEach((bid) => {
+        if (bid.freelancer.toLowerCase() === publicKey.toLowerCase()) {
+          userBids.push({ job, bid });
+        }
+      });
+    });
+    setMyBids(userBids);
+  }, [publicKey]);
+
+  if (!isConnected || !publicKey) {
+    return (
+      <div className="container" style={{ maxWidth: "600px", padding: "64px 0", textAlign: "center" }}>
+        <div className="card" style={{ padding: "48px 32px" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>⚡</div>
+          <h2 style={{ marginBottom: "12px" }}>Wallet Connection Required</h2>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "24px", lineHeight: 1.6 }}>
+            Connect your Stellar wallet (Freighter, xBull, LOBSTR, Albedo, Rabet) to view your on-chain profile, reputation metrics, active escrows, and bid history.
+          </p>
+
+          <div style={{ display: "flex", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
+            {availableWallets.map((w) => (
+              <button
+                key={w.id}
+                onClick={() => connect(w.id)}
+                className="btn btn-secondary btn-sm"
+                id={`profile-connect-${w.id}`}
+              >
+                {w.icon} Connect {w.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container" style={{ maxWidth: "900px" }}>
+    <div className="container" style={{ maxWidth: "920px" }}>
       <div className="page-header">
-        <h1 className="page-title">My Profile</h1>
+        <h1 className="page-title">On-Chain Stellar Profile</h1>
       </div>
 
-      {/* ── Wallet Info ────────────────────── */}
+      {/* ── Wallet Card ────────────────────── */}
       <div className="card" style={{ marginBottom: "24px" }}>
-        <div className="detail-label">Connected Wallet</div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.95rem",
-            wordBreak: "break-all",
-            color: "var(--text-secondary)",
-            position: "relative",
-          }}
-        >
-          {profile.address}
+        <div className="detail-label">Connected Wallet Account</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "1rem",
+                wordBreak: "break-all",
+                color: "var(--text-primary)",
+                fontWeight: 600,
+              }}
+            >
+              {publicKey}
+            </div>
+            <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "4px" }}>
+              Connected via <strong style={{ color: "var(--cyan-light)" }}>{walletType}</strong> &middot; Stellar Testnet
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: "10px 18px",
+              borderRadius: "12px",
+              background: "var(--bg-glass)",
+              border: "1px solid var(--border-light)",
+              textAlign: "right",
+            }}
+          >
+            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>Available Balance</div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--cyan-light)" }}>
+              {balance.toLocaleString()} XLM
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── Reputation ─────────────────────── */}
+      {/* ── Reputation Score ───────────────── */}
       <div style={{ marginBottom: "24px" }}>
         <div className="detail-label" style={{ marginBottom: "12px" }}>
-          Reputation
+          On-Chain Reputation Score
         </div>
-        <ReputationBadge {...profile.reputation} />
+        <ReputationBadge {...reputation} />
       </div>
 
-      {/* ── Recent Activity ────────────────── */}
-      <div className="card">
-        <div className="detail-label">Recent Activity</div>
-        <div className="bid-list" style={{ marginTop: "12px" }}>
-          {profile.recentJobs.map((job) => (
-            <div key={job.id} className="bid-item">
-              <div className="bid-info">
-                <span
-                  style={{
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {job.title}
-                </span>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                    marginTop: "4px",
-                  }}
-                >
-                  <span
-                    className={`badge ${STATUS_CLASS[job.status]}`}
-                  >
-                    <span className="badge-dot" />
-                    {STATUS_LABEL[job.status]}
-                  </span>
-                  <span
-                    style={{
-                      color: "var(--text-muted)",
-                      fontSize: "0.82rem",
-                    }}
-                  >
-                    as {job.role}
-                  </span>
-                </div>
-              </div>
-              <span className="bid-amount">
-                {job.amount.toLocaleString()} XLM
-              </span>
+      {/* ── My Jobs & Activity ─────────────── */}
+      <div className="grid-2" style={{ gap: "24px" }}>
+        {/* Posted Jobs */}
+        <div className="card">
+          <div className="detail-label">Jobs Posted by You ({myJobs.length})</div>
+          {myJobs.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", padding: "12px 0" }}>
+              You have not posted any jobs yet.
+            </p>
+          ) : (
+            <div className="bid-list" style={{ marginTop: "12px" }}>
+              {myJobs.map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: "none" }}>
+                  <div className="bid-item" style={{ cursor: "pointer" }}>
+                    <div className="bid-info">
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{job.title}</span>
+                      <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                        Status: <strong style={{ color: "var(--cyan-light)" }}>{job.status}</strong> · {job.bidCount} bids
+                      </div>
+                    </div>
+                    <span className="bid-amount">{job.budget.toLocaleString()} XLM</span>
+                  </div>
+                </Link>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+
+        {/* My Bids */}
+        <div className="card">
+          <div className="detail-label">Proposals Submitted ({myBids.length})</div>
+          {myBids.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", padding: "12px 0" }}>
+              You have not submitted any proposals yet.
+            </p>
+          ) : (
+            <div className="bid-list" style={{ marginTop: "12px" }}>
+              {myBids.map(({ job, bid }) => (
+                <Link key={bid.id} href={`/jobs/${job.id}`} style={{ textDecoration: "none" }}>
+                  <div className="bid-item" style={{ cursor: "pointer" }}>
+                    <div className="bid-info">
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{job.title}</span>
+                      <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                        Bid Status: <strong style={{ color: bid.status === "accepted" ? "var(--success)" : "var(--text-secondary)" }}>{bid.status}</strong>
+                      </div>
+                    </div>
+                    <span className="bid-amount">{bid.amount.toLocaleString()} XLM</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

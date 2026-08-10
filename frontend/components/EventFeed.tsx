@@ -1,76 +1,41 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { store, MarketplaceEvent } from "@/lib/store";
+import { truncateAddress } from "@/lib/stellar";
 
-interface ContractEvent {
-  id: string;
-  type: "funded" | "milestone" | "completed" | "bid" | "posted";
-  title: string;
-  detail: string;
-  timestamp: Date;
+interface EventFeedProps {
+  jobId?: number;
 }
 
-const ICON_MAP = {
-  funded: { emoji: "💰", className: "funded" },
-  milestone: { emoji: "✅", className: "milestone" },
-  completed: { emoji: "🏆", className: "completed" },
-  bid: { emoji: "💬", className: "milestone" },
-  posted: { emoji: "📝", className: "funded" },
+const EVENT_CONFIG: Record<
+  MarketplaceEvent["type"],
+  { title: string; emoji: string; className: string }
+> = {
+  job_posted: { title: "Job Posted", emoji: "📝", className: "funded" },
+  bid_placed: { title: "Bid Placed", emoji: "💬", className: "milestone" },
+  bid_accepted: { title: "Bid Accepted", emoji: "🤝", className: "funded" },
+  escrow_funded: { title: "Escrow Funded", emoji: "💰", className: "funded" },
+  milestone_approved: { title: "Milestone Approved", emoji: "✅", className: "milestone" },
+  escrow_completed: { title: "Job Completed", emoji: "🏆", className: "completed" },
+  escrow_refunded: { title: "Escrow Refunded", emoji: "🔄", className: "completed" },
 };
 
-/**
- * Real-time event feed sidebar.
- *
- * In production: polls Soroban `getEvents` via React Query.
- * For demo: shows mock events with slide-in animation.
- */
-export function EventFeed() {
-  const [events, setEvents] = useState<ContractEvent[]>([]);
+export function EventFeed({ jobId }: EventFeedProps) {
+  const [events, setEvents] = useState<MarketplaceEvent[]>([]);
 
-  // Demo: populate mock events on mount
   useEffect(() => {
-    const mockEvents: ContractEvent[] = [
-      {
-        id: "1",
-        type: "posted",
-        title: "New Job Posted",
-        detail: "Smart Contract Audit — 5,000 XLM",
-        timestamp: new Date(Date.now() - 120_000),
-      },
-      {
-        id: "2",
-        type: "bid",
-        title: "Bid Received",
-        detail: "GBCD…WXYZ bid 4,500 XLM",
-        timestamp: new Date(Date.now() - 90_000),
-      },
-      {
-        id: "3",
-        type: "funded",
-        title: "Escrow Funded",
-        detail: "10,000 XLM locked for DeFi App",
-        timestamp: new Date(Date.now() - 60_000),
-      },
-      {
-        id: "4",
-        type: "milestone",
-        title: "Milestone Approved",
-        detail: "M1 released — 2,500 XLM to GDEF…5678",
-        timestamp: new Date(Date.now() - 30_000),
-      },
-      {
-        id: "5",
-        type: "completed",
-        title: "Job Completed",
-        detail: "All milestones paid — reputation updated",
-        timestamp: new Date(Date.now() - 10_000),
-      },
-    ];
-    setEvents(mockEvents);
-  }, []);
+    function loadEvents() {
+      setEvents(store.getEvents(jobId));
+    }
+    loadEvents();
+    const interval = setInterval(loadEvents, 3000);
+    return () => clearInterval(interval);
+  }, [jobId]);
 
-  function timeAgo(date: Date): string {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  function timeAgo(timestamp: number): string {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 5) return "just now";
     if (seconds < 60) return `${seconds}s ago`;
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes}m ago`;
@@ -80,7 +45,13 @@ export function EventFeed() {
 
   return (
     <div className="card" id="event-feed">
-      <div className="detail-label">Live Events</div>
+      <div className="detail-label" style={{ display: "flex", justifyContent: "space-between" }}>
+        <span>On-Chain Live Events</span>
+        <span style={{ fontSize: "0.75rem", color: "var(--cyan-light)", fontWeight: 400 }}>
+          ⚡ Testnet RPC
+        </span>
+      </div>
+
       <div className="event-feed">
         {events.length === 0 && (
           <p
@@ -90,21 +61,46 @@ export function EventFeed() {
               padding: "16px 0",
             }}
           >
-            No events yet. Events will appear here as contracts are invoked.
+            No events yet for this job. Actions like posting, bidding, and releasing escrow will display in real-time.
           </p>
         )}
         {events.map((event) => {
-          const icon = ICON_MAP[event.type];
+          const config = EVENT_CONFIG[event.type] || {
+            title: "Event",
+            emoji: "⚡",
+            className: "milestone",
+          };
           return (
             <div key={event.id} className="event-item">
-              <div className={`event-icon ${icon.className}`}>
-                {icon.emoji}
+              <div className={`event-icon ${config.className}`}>
+                {config.emoji}
               </div>
               <div className="event-content">
-                <div className="event-title">{event.title}</div>
-                <div className="event-time">
-                  {event.detail} &middot; {timeAgo(event.timestamp)}
+                <div className="event-title" style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>{config.title}</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    {timeAgo(event.timestamp)}
+                  </span>
                 </div>
+                <div className="event-time" style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                  {truncateAddress(event.actor)}
+                  {event.amount ? ` · ${event.amount.toLocaleString()} XLM` : ""}
+                </div>
+                {event.txHash && (
+                  <a
+                    href={`https://stellar.expert/explorer/testnet/tx/${event.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: "0.74rem",
+                      color: "var(--cyan-light)",
+                      display: "inline-block",
+                      marginTop: "2px",
+                    }}
+                  >
+                    Tx: {truncateAddress(event.txHash, 6)} →
+                  </a>
+                )}
               </div>
             </div>
           );

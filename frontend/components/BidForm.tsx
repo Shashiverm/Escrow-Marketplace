@@ -1,35 +1,49 @@
 "use client";
 
 import { useState } from "react";
+import { useWallet } from "@/hooks/useWallet";
+import { placeBid } from "@/lib/contracts";
 
 interface BidFormProps {
   jobId: number;
   jobBudget: number;
-  onSubmit?: (amount: number, proposal: string) => void;
+  onBidSubmitted?: () => void;
 }
 
-/**
- * Bid submission form for freelancers.
- * Validates amount and proposal before submitting.
- */
-export function BidForm({ jobId, jobBudget, onSubmit }: BidFormProps) {
+export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
+  const { publicKey, walletType, isConnected } = useWallet();
   const [amount, setAmount] = useState("");
   const [proposal, setProposal] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!amount || !proposal) return;
+    if (!isConnected || !publicKey || !walletType) {
+      setError("Please connect your wallet first to place a bid");
+      return;
+    }
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
-      // In production: invoke the contract via Stellar SDK
-      // const tx = await contracts.placeBid(jobId, parseInt(amount), proposal);
-      onSubmit?.(parseInt(amount), proposal);
+      const res = await placeBid(
+        publicKey,
+        walletType,
+        jobId,
+        parseInt(amount),
+        proposal
+      );
+      setTxHash(res.txHash);
       setSubmitted(true);
+      onBidSubmitted?.();
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Bid placement failed";
+      setError(msg);
       console.error("Bid submission failed:", err);
     } finally {
       setIsSubmitting(false);
@@ -38,19 +52,58 @@ export function BidForm({ jobId, jobBudget, onSubmit }: BidFormProps) {
 
   if (submitted) {
     return (
-      <div className="card" style={{ textAlign: "center", padding: "32px" }}>
+      <div className="card" style={{ textAlign: "center", padding: "24px" }}>
         <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🎉</div>
         <h3 style={{ marginBottom: "4px" }}>Bid Submitted!</h3>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-          Your bid of {parseInt(amount).toLocaleString()} XLM for job #{jobId}{" "}
-          has been submitted.
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "12px" }}>
+          Your bid of {parseInt(amount).toLocaleString()} XLM for job #{jobId} has been placed.
         </p>
+        {txHash && (
+          <a
+            href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: "0.82rem", color: "var(--cyan-light)", wordBreak: "break-all" }}
+          >
+            View on Stellar Expert →
+          </a>
+        )}
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} id={`bid-form-${jobId}`}>
+      {error && (
+        <div
+          style={{
+            padding: "10px 14px",
+            borderRadius: "8px",
+            background: "var(--error-bg)",
+            color: "var(--error)",
+            fontSize: "0.85rem",
+            marginBottom: "16px",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {!isConnected && (
+        <div
+          style={{
+            padding: "10px 14px",
+            borderRadius: "8px",
+            background: "var(--info-bg)",
+            color: "var(--info)",
+            fontSize: "0.85rem",
+            marginBottom: "16px",
+          }}
+        >
+          ℹ️ Connect your Stellar wallet to submit a bid on-chain.
+        </div>
+      )}
+
       <div className="form-group">
         <label className="form-label" htmlFor={`bid-amount-${jobId}`}>
           Bid Amount (XLM)
@@ -59,7 +112,7 @@ export function BidForm({ jobId, jobBudget, onSubmit }: BidFormProps) {
           id={`bid-amount-${jobId}`}
           type="number"
           className="form-input"
-          placeholder={`Budget: ${jobBudget.toLocaleString()} XLM`}
+          placeholder={`Suggested budget: ${jobBudget.toLocaleString()} XLM`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           min={1}
@@ -74,7 +127,7 @@ export function BidForm({ jobId, jobBudget, onSubmit }: BidFormProps) {
         <textarea
           id={`bid-proposal-${jobId}`}
           className="form-textarea"
-          placeholder="Describe your approach, experience, and timeline…"
+          placeholder="Describe your qualifications, approach, and timeline…"
           value={proposal}
           onChange={(e) => setProposal(e.target.value)}
           required
@@ -84,11 +137,11 @@ export function BidForm({ jobId, jobBudget, onSubmit }: BidFormProps) {
       <button
         type="submit"
         className="btn btn-primary"
-        disabled={isSubmitting}
+        disabled={isSubmitting || !isConnected}
         style={{ width: "100%" }}
         id={`bid-submit-${jobId}`}
       >
-        {isSubmitting ? "Submitting…" : "Submit Bid"}
+        {isSubmitting ? "Signing & Submitting…" : "Submit Bid with Connected Wallet"}
       </button>
     </form>
   );

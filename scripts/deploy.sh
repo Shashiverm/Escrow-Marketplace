@@ -16,16 +16,26 @@ set -euo pipefail
 
 NETWORK="testnet"
 SOURCE="deployer"
-WASM_DIR="target/wasm32-unknown-unknown/release"
+if [ -d "target/wasm32v1-none/release" ]; then
+  WASM_DIR="target/wasm32v1-none/release"
+else
+  WASM_DIR="target/wasm32-unknown-unknown/release"
+fi
 
 echo "╔══════════════════════════════════════════════════╗"
 echo "║  Stellar Escrow Marketplace — Testnet Deployment ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 
-# ── 1. Build contracts ────────────────────────────
-echo "▶ Building contracts…"
-cargo build --release --target wasm32-unknown-unknown
+# ── 1. Fund deployer account ─────────────────────
+echo "▶ Funding deployer account on Testnet…"
+stellar keys fund "${SOURCE}" --network "${NETWORK}" || true
+echo "  ✓ Account ready"
+echo ""
+
+# ── 2. Build contracts ────────────────────────────
+echo "▶ Building contracts with stellar CLI…"
+stellar contract build
 echo "  ✓ Build complete"
 echo ""
 

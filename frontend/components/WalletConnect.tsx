@@ -1,85 +1,94 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useWallet } from "@/hooks/useWallet";
+import { WalletModal } from "./WalletModal";
+import { WalletType } from "@/lib/wallets";
 
-/**
- * Wallet connection button using Freighter API.
- *
- * Checks for the Freighter browser extension and allows
- * the user to connect/disconnect their Stellar wallet.
- */
+const WALLET_ICONS: Record<WalletType, string> = {
+  freighter: "🚀",
+  xbull: "🐂",
+  lobstr: "🦞",
+  albedo: "⚡",
+  rabet: "🐰",
+};
+
 export function WalletConnect() {
-  const [publicKey, setPublicKey] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    publicKey,
+    balance,
+    walletType,
+    isLoading,
+    error,
+    availableWallets,
+    connect,
+    disconnect,
+  } = useWallet();
 
-  // Check for existing connection on mount
-  useEffect(() => {
-    checkConnection();
-  }, []);
-
-  async function checkConnection() {
-    try {
-      if (typeof window === "undefined") return;
-      const freighterApi = await import("@stellar/freighter-api");
-      const { isConnected } = freighterApi;
-      const connected = await isConnected();
-      if (connected) {
-        const { getAddress } = freighterApi;
-        const addressObj = await getAddress();
-        if (addressObj.address) {
-          setPublicKey(addressObj.address);
-        }
-      }
-    } catch {
-      // Freighter not installed — fail silently
-    }
-  }
-
-  async function handleConnect() {
-    setIsLoading(true);
-    try {
-      const freighterApi = await import("@stellar/freighter-api");
-      const { requestAccess } = freighterApi;
-      const accessObj = await requestAccess();
-      if (accessObj.address) {
-        setPublicKey(accessObj.address);
-      }
-    } catch (err) {
-      console.error("Wallet connection failed:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  function handleDisconnect() {
-    setPublicKey(null);
-  }
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   function truncateAddress(addr: string): string {
-    return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+    return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
+  }
+
+  async function handleSelectWallet(type: WalletType) {
+    const address = await connect(type);
+    if (address) {
+      setIsModalOpen(false);
+    }
   }
 
   if (publicKey) {
+    const icon = walletType ? WALLET_ICONS[walletType] : "⚡";
     return (
-      <button
-        className="btn btn-secondary btn-sm wallet-btn connected"
-        onClick={handleDisconnect}
-        title={publicKey}
-        id="wallet-disconnect-btn"
-      >
-        <span className="wallet-address">{truncateAddress(publicKey)}</span>
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div
+          style={{
+            padding: "6px 12px",
+            borderRadius: "var(--radius-full)",
+            background: "var(--bg-glass)",
+            border: "1px solid var(--border-light)",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            color: "var(--cyan-light)",
+          }}
+        >
+          {balance.toLocaleString()} XLM
+        </div>
+
+        <button
+          className="btn btn-secondary btn-sm wallet-btn connected"
+          onClick={disconnect}
+          title={`Connected via ${walletType || "Wallet"}: ${publicKey}\nClick to Disconnect`}
+          id="wallet-disconnect-btn"
+          style={{ display: "flex", alignItems: "center", gap: "6px" }}
+        >
+          <span>{icon}</span>
+          <span className="wallet-address">{truncateAddress(publicKey)}</span>
+        </button>
+      </div>
     );
   }
 
   return (
-    <button
-      className="btn btn-primary btn-sm wallet-btn"
-      onClick={handleConnect}
-      disabled={isLoading}
-      id="wallet-connect-btn"
-    >
-      {isLoading ? "Connecting…" : "Connect Wallet"}
-    </button>
+    <>
+      <button
+        className="btn btn-primary btn-sm wallet-btn"
+        onClick={() => setIsModalOpen(true)}
+        disabled={isLoading}
+        id="wallet-connect-btn"
+      >
+        {isLoading ? "Connecting…" : "Connect Wallet"}
+      </button>
+
+      <WalletModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        availableWallets={availableWallets}
+        onSelectWallet={handleSelectWallet}
+        isLoading={isLoading}
+        error={error}
+      />
+    </>
   );
 }
