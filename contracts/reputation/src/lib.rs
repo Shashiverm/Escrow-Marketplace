@@ -22,7 +22,7 @@ mod test;
 /// Reputation score for a single address.  Freelancer-specific and
 /// client-specific counters are stored together for simplicity.
 #[contracttype]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReputationScore {
     /// Number of jobs completed as a freelancer
     pub jobs_completed: u32,

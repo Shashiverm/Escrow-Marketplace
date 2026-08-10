@@ -4,8 +4,8 @@ use super::*;
 use soroban_sdk::{testutils::Address as _, Env, String};
 
 /// Helper: register the contract and return a client.
-fn setup(env: &Env) -> (Address, JobRegistryContractClient) {
-    let id = env.register_contract(None, JobRegistryContract);
+fn setup<'a>(env: &'a Env) -> (Address, JobRegistryContractClient<'a>) {
+    let id = env.register(JobRegistryContract, ());
     let client = JobRegistryContractClient::new(env, &id);
     (id, client)
 }

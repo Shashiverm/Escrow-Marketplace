@@ -24,7 +24,7 @@ mod test;
 
 /// Possible states of a job listing.
 #[contracttype]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum JobStatus {
     Open = 0,
@@ -35,7 +35,7 @@ pub enum JobStatus {
 
 /// A freelancer's bid on a job.
 #[contracttype]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Bid {
     pub freelancer: Address,
     pub amount: i128,
@@ -44,7 +44,7 @@ pub struct Bid {
 
 /// A job listing with metadata, status, and assigned freelancer.
 #[contracttype]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Job {
     pub id: u64,
     pub client: Address,
@@ -227,11 +227,10 @@ impl JobRegistryContract {
     pub fn update_status(env: Env, caller: Address, job_id: u64, new_status: u32) {
         caller.require_auth();
 
-        let mut job: Job = env
-            .storage()
-            .persistent()
-            .get(&DataKey::Job(job_id))
-            .expect("Job not found");
+        let mut job: Job = match env.storage().persistent().get(&DataKey::Job(job_id)) {
+            Some(j) => j,
+            None => return,
+        };
 
         job.status = match new_status {
             0 => JobStatus::Open,

@@ -9,11 +9,12 @@ soroban-sdk = { workspace = true }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+ed25519-dalek = { workspace = true }
 soroban-job-registry-contract = { path = "../job_registry" }
 soroban-reputation-contract = { path = "../reputation" }
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [features]
 testutils = ["soroban-sdk/testutils"]

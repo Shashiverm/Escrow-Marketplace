@@ -2,11 +2,13 @@
 
 use super::*;
 use soroban_sdk::{testutils::Address as _, token, Env, String};
+use soroban_job_registry_contract::{JobRegistryContract, JobRegistryContractClient, JobStatus as JrJobStatus};
+use soroban_reputation_contract::{ReputationContract, ReputationContractClient};
 
 // ── Test helpers ──────────────────────────────────
 
 /// Create a test token and return (admin, token_address, token_client, admin_client).
-fn setup_token(env: &Env) -> (Address, Address, token::Client, token::StellarAssetClient) {
+fn setup_token<'a>(env: &'a Env) -> (Address, Address, token::Client<'a>, token::StellarAssetClient<'a>) {
     let admin = Address::generate(env);
     let token_addr = env.register_stellar_asset_contract_v2(admin.clone());
     let tc = token::Client::new(env, &token_addr.address());
@@ -15,16 +17,16 @@ fn setup_token(env: &Env) -> (Address, Address, token::Client, token::StellarAss
 }
 
 /// Register the Escrow contract alone and initialize it.
-fn setup_escrow(
-    env: &Env,
+fn setup_escrow<'a>(
+    env: &'a Env,
     token_addr: &Address,
-    job_registry: &Address,
-    reputation: &Address,
-) -> (Address, EscrowContractClient) {
-    let id = env.register_contract(None, EscrowContract);
+) -> (Address, EscrowContractClient<'a>) {
+    let job_registry = env.register(JobRegistryContract, ());
+    let reputation = env.register(ReputationContract, ());
+    let id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(env, &id);
     let admin = Address::generate(env);
-    client.initialize(&admin, token_addr, job_registry, reputation);
+    client.initialize(&admin, token_addr, &job_registry, &reputation);
     (id, client)
 }
 
@@ -38,10 +40,7 @@ fn test_initialize() {
     env.mock_all_auths();
 
     let (_, token_addr, _, _) = setup_token(&env);
-    let jr = Address::generate(&env);
-    let rp = Address::generate(&env);
-
-    let (_, _client) = setup_escrow(&env, &token_addr, &jr, &rp);
+    let (_, _client) = setup_escrow(&env, &token_addr);
     // No panic → success
 }
 
@@ -52,7 +51,7 @@ fn test_double_initialize() {
     env.mock_all_auths();
 
     let (_, token_addr, _, _) = setup_token(&env);
-    let id = env.register_contract(None, EscrowContract);
+    let id = env.register(EscrowContract, ());
     let client = EscrowContractClient::new(&env, &id);
 
     let admin = Address::generate(&env);
@@ -73,9 +72,7 @@ fn test_fund_escrow() {
     env.mock_all_auths();
 
     let (_, token_addr, token_client, token_admin) = setup_token(&env);
-    let jr = Address::generate(&env);
-    let rp = Address::generate(&env);
-    let (escrow_addr, escrow_client) = setup_escrow(&env, &token_addr, &jr, &rp);
+    let (escrow_addr, escrow_client) = setup_escrow(&env, &token_addr);
 
     let client_addr = Address::generate(&env);
     let freelancer = Address::generate(&env);
@@ -110,9 +107,7 @@ fn test_approve_single_milestone() {
     env.mock_all_auths();
 
     let (_, token_addr, token_client, token_admin) = setup_token(&env);
-    let jr = Address::generate(&env);
-    let rp = Address::generate(&env);
-    let (_escrow_addr, escrow_client) = setup_escrow(&env, &token_addr, &jr, &rp);
+    let (_escrow_addr, escrow_client) = setup_escrow(&env, &token_addr);
 
     let client_addr = Address::generate(&env);
     let freelancer = Address::generate(&env);
@@ -140,9 +135,7 @@ fn test_refund_full() {
     env.mock_all_auths();
 
     let (_, token_addr, token_client, token_admin) = setup_token(&env);
-    let jr = Address::generate(&env);
-    let rp = Address::generate(&env);
-    let (_escrow_addr, escrow_client) = setup_escrow(&env, &token_addr, &jr, &rp);
+    let (_escrow_addr, escrow_client) = setup_escrow(&env, &token_addr);
 
     let client_addr = Address::generate(&env);
     let freelancer = Address::generate(&env);
@@ -164,9 +157,7 @@ fn test_refund_partial() {
     env.mock_all_auths();
 
     let (_, token_addr, token_client, token_admin) = setup_token(&env);
-    let jr = Address::generate(&env);
-    let rp = Address::generate(&env);
-    let (_escrow_addr, escrow_client) = setup_escrow(&env, &token_addr, &jr, &rp);
+    let (_escrow_addr, escrow_client) = setup_escrow(&env, &token_addr);
 
     let client_addr = Address::generate(&env);
     let freelancer = Address::generate(&env);
@@ -197,15 +188,9 @@ fn test_full_milestone_flow() {
     env.mock_all_auths();
 
     // Register all three contracts
-    let job_registry_id = env.register_contract(
-        None,
-        soroban_job_registry_contract::JobRegistryContract,
-    );
-    let reputation_id = env.register_contract(
-        None,
-        soroban_reputation_contract::ReputationContract,
-    );
-    let escrow_id = env.register_contract(None, EscrowContract);
+    let job_registry_id = env.register(JobRegistryContract, ());
+    let reputation_id = env.register(ReputationContract, ());
+    let escrow_id = env.register(EscrowContract, ());
 
     // Setup token
     let (_, token_addr, token_client, token_admin) = setup_token(&env);
@@ -217,12 +202,12 @@ fn test_full_milestone_flow() {
 
     // Initialize reputation (escrow_id is the authorized caller)
     let rep_client =
-        soroban_reputation_contract::ReputationContractClient::new(&env, &reputation_id);
+        ReputationContractClient::new(&env, &reputation_id);
     rep_client.initialize(&admin, &escrow_id);
 
     // Post a job
     let jr_client =
-        soroban_job_registry_contract::JobRegistryContractClient::new(&env, &job_registry_id);
+        JobRegistryContractClient::new(&env, &job_registry_id);
     let poster = Address::generate(&env);
     let freelancer = Address::generate(&env);
 
@@ -255,7 +240,7 @@ fn test_full_milestone_flow() {
 
     // Verify Job Registry status was updated to Completed
     let job = jr_client.get_job(&0);
-    assert_eq!(job.status, soroban_job_registry_contract::JobStatus::Completed);
+    assert_eq!(job.status, JrJobStatus::Completed);
 
     // Verify Reputation was updated
     let fl_score = rep_client.get_score(&freelancer);

@@ -4,8 +4,8 @@ use super::*;
 use soroban_sdk::{testutils::Address as _, Env};
 
 /// Helper: register and initialize the reputation contract.
-fn setup(env: &Env, escrow_id: &Address) -> (Address, ReputationContractClient) {
-    let id = env.register_contract(None, ReputationContract);
+fn setup<'a>(env: &'a Env, escrow_id: &Address) -> (Address, ReputationContractClient<'a>) {
+    let id = env.register(ReputationContract, ());
     let client = ReputationContractClient::new(env, &id);
     let admin = Address::generate(env);
     client.initialize(&admin, escrow_id);
@@ -33,7 +33,7 @@ fn test_double_initialize() {
     env.mock_all_auths();
 
     let escrow = Address::generate(&env);
-    let id = env.register_contract(None, ReputationContract);
+    let id = env.register(ReputationContract, ());
     let client = ReputationContractClient::new(&env, &id);
 
     let admin = Address::generate(&env);

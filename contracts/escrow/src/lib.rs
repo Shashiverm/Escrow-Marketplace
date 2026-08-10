@@ -29,7 +29,7 @@ mod test;
 // ──────────────────────────────────────────────
 
 #[contracttype]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum EscrowStatus {
     Active = 0,
@@ -39,7 +39,7 @@ pub enum EscrowStatus {
 
 /// Escrow record for a single job.
 #[contracttype]
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EscrowData {
     pub job_id: u64,
     pub client: Address,
