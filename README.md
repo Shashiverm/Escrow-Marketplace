@@ -57,8 +57,8 @@ The frontend polls events via Stellar RPC's `getEvents` endpoint using React Que
 
 | | Link |
 |---|---|
-| **Frontend Live App** | [freelance-escrow-marketplace.vercel.app](https://freelance-escrow-marketplace.vercel.app/) |
-
+| **Frontend Live App** | [Live App](https://escrow-marketplace-six.vercel.app/) |
+| **Live Demo Video** | [Demo Video](https://youtu.be/srbNFMvJXPM) |
 ---
 
 ## 📜 Smart Contract Deployment
