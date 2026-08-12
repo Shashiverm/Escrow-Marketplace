@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { WalletModal } from "./WalletModal";
 import { WalletType } from "@/lib/wallets";
@@ -45,12 +45,12 @@ export function WalletConnect() {
         <div
           style={{
             padding: "6px 12px",
-            borderRadius: "var(--radius-full)",
-            background: "var(--bg-glass)",
-            border: "1px solid var(--border-light)",
+            borderRadius: "var(--radius-full, 9999px)",
+            background: "var(--bg-glass, rgba(255,255,255,0.05))",
+            border: "1px solid var(--border-light, rgba(255,255,255,0.1))",
             fontSize: "0.82rem",
             fontWeight: 600,
-            color: "var(--cyan-light)",
+            color: "var(--cyan-light, #38bdf8)",
           }}
         >
           {balance.toLocaleString()} XLM

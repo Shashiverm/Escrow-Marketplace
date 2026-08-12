@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { store, MarketplaceEvent } from "@/lib/store";
 import { truncateAddress } from "@/lib/stellar";
 
@@ -64,7 +64,7 @@ export function EventFeed({ jobId }: EventFeedProps) {
             No events yet for this job. Actions like posting, bidding, and releasing escrow will display in real-time.
           </p>
         )}
-        {events.map((event) => {
+        {events.map((event: MarketplaceEvent) => {
           const config = EVENT_CONFIG[event.type] || {
             title: "Event",
             emoji: "⚡",

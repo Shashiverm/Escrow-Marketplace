@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { placeBid } from "@/lib/contracts";
 
@@ -55,7 +55,7 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
       <div className="card" style={{ textAlign: "center", padding: "24px" }}>
         <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🎉</div>
         <h3 style={{ marginBottom: "4px" }}>Bid Submitted!</h3>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "12px" }}>
+        <p style={{ color: "var(--text-secondary, #94a3b8)", fontSize: "0.9rem", marginBottom: "12px" }}>
           Your bid of {parseInt(amount).toLocaleString()} XLM for job #{jobId} has been placed.
         </p>
         {txHash && (
@@ -63,7 +63,7 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
             href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: "0.82rem", color: "var(--cyan-light)", wordBreak: "break-all" }}
+            style={{ fontSize: "0.82rem", color: "var(--cyan-light, #38bdf8)", wordBreak: "break-all" }}
           >
             View on Stellar Expert →
           </a>
@@ -79,8 +79,8 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
           style={{
             padding: "10px 14px",
             borderRadius: "8px",
-            background: "var(--error-bg)",
-            color: "var(--error)",
+            background: "rgba(239, 68, 68, 0.1)",
+            color: "#f87171",
             fontSize: "0.85rem",
             marginBottom: "16px",
           }}
@@ -94,8 +94,8 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
           style={{
             padding: "10px 14px",
             borderRadius: "8px",
-            background: "var(--info-bg)",
-            color: "var(--info)",
+            background: "rgba(56, 189, 248, 0.1)",
+            color: "#38bdf8",
             fontSize: "0.85rem",
             marginBottom: "16px",
           }}

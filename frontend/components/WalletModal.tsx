@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { WalletInfo, WalletType } from "@/lib/wallets";
 
@@ -27,7 +27,6 @@ export function WalletModal({
     setMounted(true);
   }, []);
 
-  // Prevent background scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";

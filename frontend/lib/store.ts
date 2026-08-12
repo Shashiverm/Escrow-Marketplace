@@ -245,6 +245,28 @@ class StoreManager {
     return jobs.find((j) => j.id === id);
   }
 
+  getJob(id: number): Job | undefined {
+    return this.getJobById(id);
+  }
+
+  getEscrow(jobId: number): EscrowRecord | undefined {
+    const job = this.getJobById(jobId);
+    if (!job || job.status === "open") return undefined;
+    const perMilestone = Math.floor(job.budget / job.milestoneCount);
+    return {
+      jobId: job.id,
+      client: job.client,
+      freelancer: job.freelancer || "",
+      totalAmount: job.budget,
+      milestoneCount: job.milestoneCount,
+      perMilestone,
+      milestonesApproved: job.milestonesApproved,
+      milestonesReleased: job.milestonesReleased,
+      status: job.status === "completed" ? "completed" : job.status === "cancelled" ? "refunded" : "active",
+      fundedAt: job.createdAt,
+    };
+  }
+
   addJob(job: Omit<Job, "id" | "bidCount" | "status" | "milestonesApproved" | "milestonesReleased" | "createdAt">, txHash?: string): Job {
     const jobs = this.getJobs();
     const newId = jobs.length > 0 ? Math.max(...jobs.map((j) => j.id)) + 1 : 0;

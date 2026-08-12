@@ -7,6 +7,7 @@ import {
   getLiveBalance,
   getAvailableWallets,
   WalletInfo,
+  isFreighterConnected,
 } from "@/lib/wallets";
 
 interface WalletState {
@@ -30,7 +31,6 @@ export function useWallet(): WalletState {
   const [error, setError] = useState<string | null>(null);
   const [availableWallets, setAvailableWallets] = useState<WalletInfo[]>([]);
 
-  // Initialize available wallets and restore saved wallet session
   useEffect(() => {
     setAvailableWallets(getAvailableWallets());
 

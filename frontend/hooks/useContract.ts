@@ -14,16 +14,6 @@ interface UseContractResult<T> {
  * Generic hook for invoking a Soroban contract function.
  *
  * Wraps async contract calls with loading/error state management.
- *
- * Usage:
- * ```tsx
- * const { execute, isLoading, error } = useContract(contracts.postJob);
- *
- * const handleSubmit = async () => {
- *   const result = await execute(publicKey, "Title", "Desc", 1000, 3);
- *   if (result) router.push("/jobs");
- * };
- * ```
  */
 export function useContract<T>(
   contractFn: (...args: unknown[]) => Promise<T>
