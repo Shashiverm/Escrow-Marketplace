@@ -106,7 +106,7 @@ export async function connectWallet(type: WalletType): Promise<string> {
 
   switch (type) {
     case "freighter": {
-      const freighterApi = await import("@stellar/freighter-api");
+      const freighterApi: any = await import("@stellar/freighter-api");
 
       // Check permission / request access
       if (freighterApi.requestAccess) {
@@ -197,7 +197,7 @@ export async function signTxWithWallet(
 ): Promise<string> {
   switch (type) {
     case "freighter": {
-      const freighterApi = await import("@stellar/freighter-api");
+      const freighterApi: any = await import("@stellar/freighter-api");
       const signedXdr = await freighterApi.signTransaction(xdr, {
         networkPassphrase,
       });
