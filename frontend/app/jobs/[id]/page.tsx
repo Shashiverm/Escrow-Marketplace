@@ -9,12 +9,13 @@ import { useWallet } from "@/hooks/useWallet";
 import { store, Job, Bid } from "@/lib/store";
 import { acceptBid, approveMilestone, refundEscrow } from "@/lib/contracts";
 import { truncateAddress } from "@/lib/stellar";
+import Link from "next/link";
 
 const STATUS_MAP = {
-  open: { label: "Open", className: "badge-open" },
+  open: { label: "Open for Bids", className: "badge-open" },
   progress: { label: "In Progress", className: "badge-progress" },
   completed: { label: "Completed", className: "badge-completed" },
-  cancelled: { label: "Cancelled", className: "badge-cancelled" },
+  cancelled: { label: "Cancelled / Refunded", className: "badge-cancelled" },
 };
 
 export default function JobDetailPage() {
@@ -45,8 +46,17 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="container" style={{ padding: "64px 0", textAlign: "center" }}>
-        <h2>Loading Job details…</h2>
+      <div className="container" style={{ padding: "80px 0", textAlign: "center" }}>
+        <div className="empty-state card" style={{ maxWidth: "500px", margin: "0 auto", padding: "40px" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🔍</div>
+          <h3>Job Contract Not Found</h3>
+          <p style={{ color: "var(--text-secondary)", marginTop: "8px", marginBottom: "20px" }}>
+            The requested contract ID #{jobId} could not be located on the Stellar ledger store.
+          </p>
+          <Link href="/jobs" className="btn btn-primary">
+            &larr; Back to Open Jobs
+          </Link>
+        </div>
       </div>
     );
   }
@@ -56,9 +66,12 @@ export default function JobDetailPage() {
   const statusInfo = STATUS_MAP[job.status] || STATUS_MAP.open;
   const perMilestone = Math.floor(job.budget / job.milestoneCount);
 
+  // Generate milestone amounts list
+  const milestoneAmounts = Array.from({ length: job.milestoneCount }, () => perMilestone);
+
   async function handleAcceptBid(bidIndex: number) {
     if (!isConnected || !publicKey || !walletType) {
-      setActionError("Please connect your Stellar wallet first.");
+      setActionError("Please connect your Stellar wallet to accept this proposal.");
       return;
     }
     setIsProcessing(true);
@@ -68,7 +81,7 @@ export default function JobDetailPage() {
     try {
       const res = await acceptBid(publicKey, walletType, jobId, bidIndex);
       if (res.success) {
-        setActionSuccess("Bid accepted & escrow budget funded successfully!");
+        setActionSuccess("Bid accepted! Smart contract escrow has been funded and locked on Stellar.");
         loadJobData();
       }
     } catch (err) {
@@ -80,7 +93,7 @@ export default function JobDetailPage() {
 
   async function handleApproveMilestone() {
     if (!isConnected || !publicKey || !walletType) {
-      setActionError("Please connect your Stellar wallet first.");
+      setActionError("Please connect your Stellar wallet to release funds.");
       return;
     }
     setIsProcessing(true);
@@ -90,7 +103,7 @@ export default function JobDetailPage() {
     try {
       const res = await approveMilestone(publicKey, walletType, jobId);
       if (res.success) {
-        setActionSuccess("Milestone approved & payment released on Stellar!");
+        setActionSuccess("Milestone approved! Funds successfully disbursed to freelancer on Stellar.");
         loadJobData();
       }
     } catch (err) {
@@ -102,7 +115,7 @@ export default function JobDetailPage() {
 
   async function handleRefundEscrow() {
     if (!isConnected || !publicKey || !walletType) {
-      setActionError("Please connect your Stellar wallet first.");
+      setActionError("Please connect your Stellar wallet.");
       return;
     }
     if (!confirm("Are you sure you want to refund the remaining unreleased escrow back to your wallet?")) return;
@@ -113,7 +126,7 @@ export default function JobDetailPage() {
     try {
       const res = await refundEscrow(publicKey, walletType, jobId);
       if (res.success) {
-        setActionSuccess("Escrow refunded back to client!");
+        setActionSuccess("Escrow successfully refunded back to client wallet!");
         loadJobData();
       }
     } catch (err) {
@@ -125,89 +138,107 @@ export default function JobDetailPage() {
 
   return (
     <div className="container">
-      {/* ── Header ──────────────────── */}
-      <div className="page-header">
+      {/* ── Breadcrumb ───────────────────── */}
+      <div style={{ marginBottom: "16px" }}>
+        <Link href="/jobs" style={{ fontSize: "0.88rem", color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+          &larr; Back to Job Explorer
+        </Link>
+      </div>
+
+      {/* ── Header Card ──────────────────── */}
+      <div className="page-header" style={{ alignItems: "flex-start" }}>
         <div>
-          <h1 className="page-title">{job.title}</h1>
-          <div className="job-meta" style={{ marginTop: "8px", fontSize: "0.9rem", display: "flex", gap: "12px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
+            <span className="category-tag">Contract #{job.id}</span>
             <span className={`badge ${statusInfo.className}`}>
               <span className="badge-dot" />
               {statusInfo.label}
             </span>
+          </div>
+
+          <h1 className="page-title">{job.title}</h1>
+          
+          <div className="job-meta" style={{ marginTop: "10px", fontSize: "0.9rem", display: "flex", gap: "16px", alignItems: "center" }}>
             <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-              Client: {truncateAddress(job.client, 6)}
+              Client: <strong style={{ color: "var(--cyan-light)" }}>{truncateAddress(job.client, 6)}</strong>
             </span>
+            {job.freelancer && (
+              <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                Freelancer: <strong style={{ color: "var(--purple-light)" }}>{truncateAddress(job.freelancer, 6)}</strong>
+              </span>
+            )}
           </div>
         </div>
-        <div className="job-budget" style={{ fontSize: "1.8rem" }}>
-          {job.budget.toLocaleString()} XLM
+
+        <div style={{ textAlign: "right" }}>
+          <div className="budget-label" style={{ fontSize: "0.78rem" }}>Escrow Contract Value</div>
+          <div className="job-budget" style={{ fontSize: "2rem", color: "var(--text-primary)" }}>
+            {job.budget.toLocaleString()} <span className="currency-unit" style={{ fontSize: "1.1rem" }}>XLM</span>
+          </div>
         </div>
       </div>
 
       {actionError && (
-        <div className="card" style={{ background: "var(--error-bg)", color: "var(--error)", padding: "14px", marginBottom: "20px" }}>
-          ⚠️ {actionError}
+        <div className="card" style={{ background: "var(--error-bg)", color: "var(--error)", padding: "16px", marginBottom: "20px", borderRadius: "var(--radius-md)" }}>
+          ⚠️ <strong>Action Error:</strong> {actionError}
         </div>
       )}
 
       {actionSuccess && (
-        <div className="card" style={{ background: "var(--success-bg)", color: "var(--success)", padding: "14px", marginBottom: "20px" }}>
-          ✅ {actionSuccess}
+        <div className="card" style={{ background: "var(--success-bg)", color: "var(--success)", padding: "16px", marginBottom: "20px", borderRadius: "var(--radius-md)" }}>
+          ✅ <strong>Success:</strong> {actionSuccess}
         </div>
       )}
 
-      {/* ── Detail Grid ──────────────────── */}
+      {/* ── Main Layout ──────────────────── */}
       <div className="detail-grid">
-        {/* ── Main Column ─────────────────── */}
+        {/* ── Left / Main Column ──────────── */}
         <div className="detail-main">
-          {/* Description */}
-          <div className="card">
-            <div className="detail-label">Project Overview</div>
-            <p style={{ color: "var(--text-secondary)", lineHeight: 1.8 }}>
+          {/* Overview */}
+          <div className="card hover-glow">
+            <div className="detail-label" style={{ marginBottom: "12px" }}>Project Scope & Specifications</div>
+            <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, fontSize: "0.98rem" }}>
               {job.description}
             </p>
+
+            <div className="job-tags-list" style={{ marginTop: "16px" }}>
+              <span className="job-tag-pill">#StellarSoroban</span>
+              <span className="job-tag-pill">#SmartEscrow</span>
+              <span className="job-tag-pill">#RustContract</span>
+            </div>
           </div>
 
-          {/* Milestone Tracker */}
-          <div className="card">
-            <div className="detail-label">Milestone Progress</div>
-            <MilestoneTracker
-              total={job.milestoneCount}
-              approved={job.milestonesApproved}
-              released={job.milestonesReleased}
-            />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: "16px",
-                fontSize: "0.88rem",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <span>
-                {job.milestonesReleased}/{job.milestoneCount} milestones released
-              </span>
-              <span>{perMilestone.toLocaleString()} XLM per milestone</span>
-            </div>
+          {/* Interactive Milestone Tracker */}
+          <MilestoneTracker
+            total={job.milestoneCount}
+            approved={job.milestonesApproved}
+            released={job.milestonesReleased}
+            amounts={milestoneAmounts}
+          />
 
-            {/* Client Controls */}
-            {job.status === "progress" && isClient && (
-              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+          {/* Action Trigger Card for Client */}
+          {job.status === "progress" && isClient && (
+            <div className="card" style={{ border: "1px solid var(--purple-glow)", background: "var(--gradient-card)" }}>
+              <div className="detail-label">Client Escrow Control Center</div>
+              <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginBottom: "16px" }}>
+                As the contract client, you can approve completed deliverable work to instantly disburse XLM to the freelancer, or request an escrow refund.
+              </p>
+
+              <div style={{ display: "flex", gap: "12px" }}>
                 {job.milestonesApproved < job.milestoneCount && (
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-lg"
                     style={{ flex: 1 }}
                     onClick={handleApproveMilestone}
                     disabled={isProcessing}
                     id="approve-milestone-btn"
                   >
-                    {isProcessing ? "Signing Release..." : `Approve & Release Milestone #${job.milestonesApproved + 1}`}
+                    {isProcessing ? "Processing Release..." : `⚡ Approve & Disburse Milestone #${job.milestonesApproved + 1} (${perMilestone.toLocaleString()} XLM)`}
                   </button>
                 )}
 
                 <button
-                  className="btn btn-secondary"
+                  className="btn btn-secondary btn-lg"
                   onClick={handleRefundEscrow}
                   disabled={isProcessing}
                   id="refund-escrow-btn"
@@ -215,72 +246,90 @@ export default function JobDetailPage() {
                   Refund Escrow
                 </button>
               </div>
-            )}
+            </div>
+          )}
 
-            {job.status === "completed" && (
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background: "var(--success-bg)",
-                  color: "var(--success)",
-                  textAlign: "center",
-                  fontWeight: 600,
-                }}
-              >
-                🎉 Job completed! All milestones released and on-chain reputation scores updated.
-              </div>
-            )}
-          </div>
+          {job.status === "completed" && (
+            <div
+              className="card"
+              style={{
+                background: "var(--success-bg)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                color: "var(--success)",
+                textAlign: "center",
+                padding: "24px",
+              }}
+            >
+              <h3 style={{ margin: "0 0 6px 0", fontSize: "1.3rem" }}>🎉 Contract Fully Settled & Completed</h3>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+                All {job.milestoneCount} milestones have been approved and released. On-chain reputation metrics updated.
+              </p>
+            </div>
+          )}
 
-          {/* Bids List */}
-          <div className="card">
-            <div className="detail-label" style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Proposals ({bids.length})</span>
+          {/* Proposals / Bids List */}
+          <div className="card hover-glow">
+            <div className="detail-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Freelancer Proposals ({bids.length})</span>
               {isClient && job.status === "open" && (
-                <span style={{ color: "var(--cyan-light)", fontSize: "0.82rem" }}>
-                  Select a proposal to lock escrow & start job
+                <span className="badge badge-open" style={{ fontSize: "0.78rem" }}>
+                  Select Proposal to Lock Escrow
                 </span>
               )}
             </div>
 
             {bids.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", padding: "16px 0" }}>
-                No bids submitted yet. Freelancers can submit proposals below.
-              </p>
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", margin: 0 }}>
+                  No bids submitted yet for this position.
+                </p>
+              </div>
             ) : (
-              <div className="bid-list" style={{ marginTop: "12px" }}>
+              <div className="bid-list" style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {bids.map((bid, i) => (
-                  <div key={bid.id || i} className="bid-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
+                  <div
+                    key={bid.id || i}
+                    className="bid-item"
+                    style={{
+                      padding: "16px",
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--bg-glass)",
+                      border: "1px solid var(--border-light)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}
+                  >
                     <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
                       <div className="bid-address" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span>{truncateAddress(bid.freelancer, 6)}</span>
+                        <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)", fontSize: "0.9rem" }}>
+                          👤 {truncateAddress(bid.freelancer, 6)}
+                        </span>
                         {job.freelancer && bid.freelancer.toLowerCase() === job.freelancer.toLowerCase() && (
                           <span className="badge badge-completed">Hired Freelancer</span>
                         )}
-                        {bid.status === "rejected" && (
-                          <span className="badge badge-cancelled">Declined</span>
-                        )}
                       </div>
-                      <span className="bid-amount">{bid.amount.toLocaleString()} XLM</span>
+                      <span className="bid-amount" style={{ fontWeight: 800, color: "var(--cyan-light)", fontSize: "1.1rem" }}>
+                        {bid.amount.toLocaleString()} XLM
+                      </span>
                     </div>
 
-                    <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", margin: "4px 0" }}>
-                      {bid.proposal}
+                    <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
+                      "{bid.proposal}"
                     </p>
 
-                    {/* Accept Bid Button for Client */}
+                    {/* Client Action */}
                     {job.status === "open" && isClient && (
-                      <button
-                        className="btn btn-primary btn-sm"
-                        style={{ marginTop: "4px" }}
-                        onClick={() => handleAcceptBid(i)}
-                        disabled={isProcessing}
-                        id={`accept-bid-btn-${i}`}
-                      >
-                        {isProcessing ? "Processing Escrow..." : "Accept Bid & Lock Escrow"}
-                      </button>
+                      <div style={{ marginTop: "4px" }}>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleAcceptBid(i)}
+                          disabled={isProcessing}
+                          id={`accept-bid-btn-${i}`}
+                        >
+                          {isProcessing ? "Fund Escrow..." : "🤝 Accept Proposal & Deposit Escrow"}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -288,49 +337,47 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          {/* Bid Form for Open Jobs */}
+          {/* Proposal Submission Form */}
           {job.status === "open" && !isClient && (
-            <div className="card">
-              <div className="detail-label">Submit Your Proposal</div>
+            <div className="card hover-glow">
+              <div className="detail-label">Submit Your Bid Proposal</div>
               <BidForm jobId={job.id} jobBudget={job.budget} onBidSubmitted={loadJobData} />
             </div>
           )}
         </div>
 
-        {/* ── Sidebar ─────────────────────── */}
-        <div className="detail-sidebar">
-          {/* Job Details Card */}
-          <div className="card">
-            <div className="detail-label">Contract Parameters</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
+        {/* ── Right Sidebar ───────────────── */}
+        <div className="detail-sidebar" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* Smart Contract Specs */}
+          <div className="card hover-glow">
+            <div className="detail-label">Escrow Parameters</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
                 <span style={{ color: "var(--text-muted)" }}>Total Budget</span>
-                <span style={{ fontWeight: 600 }}>{job.budget.toLocaleString()} XLM</span>
+                <strong style={{ color: "var(--text-primary)" }}>{job.budget.toLocaleString()} XLM</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                <span style={{ color: "var(--text-muted)" }}>Milestones</span>
-                <span style={{ fontWeight: 600 }}>{job.milestoneCount}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
+                <span style={{ color: "var(--text-muted)" }}>Milestone Count</span>
+                <strong style={{ color: "var(--text-primary)" }}>{job.milestoneCount} Steps</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
                 <span style={{ color: "var(--text-muted)" }}>Per Milestone</span>
-                <span style={{ fontWeight: 600 }}>{perMilestone.toLocaleString()} XLM</span>
+                <strong style={{ color: "var(--cyan-light)" }}>{perMilestone.toLocaleString()} XLM</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                <span style={{ color: "var(--text-muted)" }}>Bids Placed</span>
-                <span style={{ fontWeight: 600 }}>{bids.length}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
+                <span style={{ color: "var(--text-muted)" }}>Disbursed</span>
+                <strong style={{ color: "var(--success)" }}>
+                  {(job.milestonesReleased * perMilestone).toLocaleString()} XLM
+                </strong>
               </div>
-              {job.freelancer && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                  <span style={{ color: "var(--text-muted)" }}>Freelancer</span>
-                  <span style={{ fontWeight: 600, fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
-                    {truncateAddress(job.freelancer, 6)}
-                  </span>
-                </div>
-              )}
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
+                <span style={{ color: "var(--text-muted)" }}>Network</span>
+                <span className="network-pill" style={{ fontSize: "0.72rem" }}>Stellar Testnet</span>
+              </div>
             </div>
           </div>
 
-          {/* Event Feed */}
+          {/* Event Stream Log */}
           <EventFeed jobId={job.id} />
         </div>
       </div>
