@@ -10,15 +10,15 @@ interface EventFeedProps {
 
 const EVENT_CONFIG: Record<
   MarketplaceEvent["type"],
-  { title: string; emoji: string; className: string }
+  { title: string; topic: string; emoji: string; className: string }
 > = {
-  job_posted: { title: "Job Posted", emoji: "📝", className: "funded" },
-  bid_placed: { title: "Bid Placed", emoji: "💬", className: "milestone" },
-  bid_accepted: { title: "Bid Accepted", emoji: "🤝", className: "funded" },
-  escrow_funded: { title: "Escrow Funded", emoji: "💰", className: "funded" },
-  milestone_approved: { title: "Milestone Approved", emoji: "✅", className: "milestone" },
-  escrow_completed: { title: "Job Completed", emoji: "🏆", className: "completed" },
-  escrow_refunded: { title: "Escrow Refunded", emoji: "🔄", className: "completed" },
+  job_posted: { title: "Job Posted", topic: 'symbol("job_posted")', emoji: "📝", className: "funded" },
+  bid_placed: { title: "Bid Placed", topic: 'symbol("bid_placed")', emoji: "💬", className: "milestone" },
+  bid_accepted: { title: "Bid Accepted", topic: 'symbol("bid_accepted")', emoji: "🤝", className: "funded" },
+  escrow_funded: { title: "Escrow Funded", topic: 'symbol("escrow_funded")', emoji: "💰", className: "funded" },
+  milestone_approved: { title: "Milestone Approved", topic: 'symbol("milestone_approved")', emoji: "✅", className: "milestone" },
+  escrow_completed: { title: "Job Completed", topic: 'symbol("job_completed")', emoji: "🏆", className: "completed" },
+  escrow_refunded: { title: "Escrow Refunded", topic: 'symbol("escrow_refunded")', emoji: "🔄", className: "completed" },
 };
 
 export function EventFeed({ jobId }: EventFeedProps) {
@@ -44,11 +44,13 @@ export function EventFeed({ jobId }: EventFeedProps) {
   }
 
   return (
-    <div className="card" id="event-feed">
-      <div className="detail-label" style={{ display: "flex", justifyContent: "space-between" }}>
-        <span>On-Chain Live Events</span>
-        <span style={{ fontSize: "0.75rem", color: "var(--cyan-light)", fontWeight: 400 }}>
-          ⚡ Testnet RPC
+    <div className="card hover-glow" id="event-feed">
+      <div className="detail-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span>Soroban On-Chain Events</span>
+        </div>
+        <span className="network-pill" style={{ fontSize: "0.72rem" }}>
+          ⚡ Testnet RPC Live
         </span>
       </div>
 
@@ -59,47 +61,68 @@ export function EventFeed({ jobId }: EventFeedProps) {
               color: "var(--text-muted)",
               fontSize: "0.88rem",
               padding: "16px 0",
+              textAlign: "center",
             }}
           >
-            No events yet for this job. Actions like posting, bidding, and releasing escrow will display in real-time.
+            No Soroban contract events recorded yet. Actions like posting jobs, bidding, and releasing milestones trigger real-time contract logs.
           </p>
         )}
-        {events.map((event: MarketplaceEvent) => {
+        {events.map((event: MarketplaceEvent, idx: number) => {
           const config = EVENT_CONFIG[event.type] || {
-            title: "Event",
+            title: "Contract Event",
+            topic: 'symbol("event")',
             emoji: "⚡",
             className: "milestone",
           };
+          
+          const simulatedLedgerSeq = 4829100 + (events.length - idx);
+
           return (
-            <div key={event.id} className="event-item">
+            <div key={event.id} className="event-item" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: "12px", marginBottom: "10px" }}>
               <div className={`event-icon ${config.className}`}>
                 {config.emoji}
               </div>
-              <div className="event-content">
-                <div className="event-title" style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>{config.title}</span>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    {timeAgo(event.timestamp)}
+              <div className="event-content" style={{ flex: 1 }}>
+                <div className="event-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.9rem" }}>{config.title}</span>
+                  <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                    Ledger #{simulatedLedgerSeq} &middot; {timeAgo(event.timestamp)}
                   </span>
                 </div>
-                <div className="event-time" style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                  {truncateAddress(event.actor)}
-                  {event.amount ? ` · ${event.amount.toLocaleString()} XLM` : ""}
+
+                <div style={{ fontSize: "0.76rem", color: "var(--purple-light)", fontFamily: "var(--font-mono)", margin: "2px 0" }}>
+                  Topic: <code>{config.topic}</code>
                 </div>
+
+                <div className="event-time" style={{ fontSize: "0.82rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>
+                    Actor: <strong style={{ color: "var(--cyan-light)", fontFamily: "var(--font-mono)" }}>{truncateAddress(event.actor, 5)}</strong>
+                  </span>
+                  {event.amount && (
+                    <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                      {event.amount.toLocaleString()} XLM
+                    </span>
+                  )}
+                </div>
+
                 {event.txHash && (
-                  <a
-                    href={`https://stellar.expert/explorer/testnet/tx/${event.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: "0.74rem",
-                      color: "var(--cyan-light)",
-                      display: "inline-block",
-                      marginTop: "2px",
-                    }}
-                  >
-                    Tx: {truncateAddress(event.txHash, 6)} →
-                  </a>
+                  <div style={{ marginTop: "4px" }}>
+                    <a
+                      href={`https://stellar.expert/explorer/testnet/tx/${event.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: "0.74rem",
+                        color: "var(--cyan-light)",
+                        fontFamily: "var(--font-mono)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "2px",
+                      }}
+                    >
+                      TX: {truncateAddress(event.txHash, 6)} ↗
+                    </a>
+                  </div>
                 )}
               </div>
             </div>

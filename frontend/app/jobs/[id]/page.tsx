@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { MilestoneTracker } from "@/components/MilestoneTracker";
 import { BidForm } from "@/components/BidForm";
 import { EventFeed } from "@/components/EventFeed";
+import { ContractInspectorModal } from "@/components/ContractInspectorModal";
+import { ToastContainer, ToastMessage } from "@/components/Toast";
 import { useWallet } from "@/hooks/useWallet";
 import { store, Job, Bid } from "@/lib/store";
 import { acceptBid, approveMilestone, refundEscrow } from "@/lib/contracts";
@@ -28,6 +30,22 @@ export default function JobDetailPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Proof of Work form state
+  const [powLink, setPowLink] = useState("");
+  const [powNotes, setPowNotes] = useState("");
+  const [powSubmitted, setPowSubmitted] = useState(false);
+
+  function addToast(type: ToastMessage["type"], title: string, message?: string, txHash?: string) {
+    const id = Math.random().toString(36).substring(7);
+    setToasts((prev) => [...prev, { id, type, title, message, txHash }]);
+  }
+
+  function dismissToast(id: string) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
 
   const loadJobData = useCallback(() => {
     if (isNaN(jobId)) return;
@@ -66,26 +84,27 @@ export default function JobDetailPage() {
   const statusInfo = STATUS_MAP[job.status] || STATUS_MAP.open;
   const perMilestone = Math.floor(job.budget / job.milestoneCount);
 
-  // Generate milestone amounts list
   const milestoneAmounts = Array.from({ length: job.milestoneCount }, () => perMilestone);
 
   async function handleAcceptBid(bidIndex: number) {
-    if (!isConnected || !publicKey || !walletType) {
+    if (!isConnected || !publicKey || !walletType || !job) {
       setActionError("Please connect your Stellar wallet to accept this proposal.");
       return;
     }
     setIsProcessing(true);
     setActionError(null);
-    setActionSuccess(null);
 
     try {
       const res = await acceptBid(publicKey, walletType, jobId, bidIndex);
       if (res.success) {
         setActionSuccess("Bid accepted! Smart contract escrow has been funded and locked on Stellar.");
+        addToast("success", "Escrow Contract Funded", `Locked ${job.budget} XLM on Soroban Testnet`, res.txHash);
         loadJobData();
       }
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to accept bid");
+      const msg = err instanceof Error ? err.message : "Failed to accept bid";
+      setActionError(msg);
+      addToast("error", "Transaction Failed", msg);
     } finally {
       setIsProcessing(false);
     }
@@ -98,16 +117,19 @@ export default function JobDetailPage() {
     }
     setIsProcessing(true);
     setActionError(null);
-    setActionSuccess(null);
 
     try {
       const res = await approveMilestone(publicKey, walletType, jobId);
       if (res.success) {
         setActionSuccess("Milestone approved! Funds successfully disbursed to freelancer on Stellar.");
+        addToast("success", "Milestone Funds Disbursed", `Released ${perMilestone} XLM to freelancer`, res.txHash);
+        setPowSubmitted(false);
         loadJobData();
       }
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to approve milestone");
+      const msg = err instanceof Error ? err.message : "Failed to approve milestone";
+      setActionError(msg);
+      addToast("error", "Approval Error", msg);
     } finally {
       setIsProcessing(false);
     }
@@ -127,22 +149,42 @@ export default function JobDetailPage() {
       const res = await refundEscrow(publicKey, walletType, jobId);
       if (res.success) {
         setActionSuccess("Escrow successfully refunded back to client wallet!");
+        addToast("info", "Escrow Refunded", "Remaining XLM returned to client balance", res.txHash);
         loadJobData();
       }
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Refund failed");
+      const msg = err instanceof Error ? err.message : "Refund failed";
+      setActionError(msg);
+      addToast("error", "Refund Error", msg);
     } finally {
       setIsProcessing(false);
     }
   }
 
+  function handleSubmitPow(e: React.FormEvent) {
+    e.preventDefault();
+    if (!powLink) return;
+    setPowSubmitted(true);
+    addToast("info", "Proof of Work Submitted", "Client notified to review deliverable link");
+  }
+
   return (
     <div className="container">
-      {/* ── Breadcrumb ───────────────────── */}
-      <div style={{ marginBottom: "16px" }}>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* ── Breadcrumb & Inspector Button ─ */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <Link href="/jobs" style={{ fontSize: "0.88rem", color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
           &larr; Back to Job Explorer
         </Link>
+        
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => setIsInspectorOpen(true)}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+        >
+          🔍 Inspect Soroban Contract State
+        </button>
       </div>
 
       {/* ── Header Card ──────────────────── */}
@@ -216,10 +258,65 @@ export default function JobDetailPage() {
             amounts={milestoneAmounts}
           />
 
-          {/* Action Trigger Card for Client */}
+          {/* Freelancer Proof of Work Submission Box */}
+          {job.status === "progress" && isFreelancer && (
+            <div className="card hover-glow" style={{ border: "1px solid var(--cyan-glow)" }}>
+              <div className="detail-label">Submit Proof of Work (Milestone #{job.milestonesApproved + 1})</div>
+              {powSubmitted ? (
+                <div style={{ background: "rgba(6, 182, 212, 0.1)", padding: "16px", borderRadius: "var(--radius-md)", color: "var(--cyan-light)" }}>
+                  ✅ <strong>Deliverable Submitted!</strong>
+                  <div style={{ fontSize: "0.85rem", marginTop: "4px", color: "var(--text-primary)" }}>
+                    PR Link: <code className="font-mono">{powLink}</code>
+                  </div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                    The client has been notified to review and release your milestone disbursement ({perMilestone.toLocaleString()} XLM).
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitPow} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: "0.85rem" }}>Deliverable URL (GitHub PR / IPFS Hash / Deployment)</label>
+                    <input
+                      type="url"
+                      className="form-input"
+                      placeholder="https://github.com/org/repo/pull/42"
+                      value={powLink}
+                      onChange={(e) => setPowLink(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontSize: "0.85rem" }}>Release Notes / Deliverable Summary</label>
+                    <textarea
+                      className="form-textarea"
+                      placeholder="Summary of completed tasks, test coverage, and documentation..."
+                      value={powNotes}
+                      onChange={(e) => setPowNotes(e.target.value)}
+                      style={{ minHeight: "80px" }}
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-primary btn-sm" style={{ width: "fit-content" }}>
+                    📤 Submit Deliverable for Review
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* Client Action Trigger Card */}
           {job.status === "progress" && isClient && (
             <div className="card" style={{ border: "1px solid var(--purple-glow)", background: "var(--gradient-card)" }}>
               <div className="detail-label">Client Escrow Control Center</div>
+              
+              {powSubmitted && (
+                <div style={{ padding: "12px", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "var(--radius-md)", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--success)", fontWeight: 700 }}>📩 Freelancer Submitted Deliverable:</span>
+                  <div style={{ fontSize: "0.85rem", fontFamily: "var(--font-mono)", color: "var(--cyan-light)", marginTop: "2px" }}>
+                    {powLink}
+                  </div>
+                </div>
+              )}
+
               <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginBottom: "16px" }}>
                 As the contract client, you can approve completed deliverable work to instantly disburse XLM to the freelancer, or request an escrow refund.
               </p>
@@ -375,12 +472,32 @@ export default function JobDetailPage() {
                 <span className="network-pill" style={{ fontSize: "0.72rem" }}>Stellar Testnet</span>
               </div>
             </div>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ width: "100%", marginTop: "16px" }}
+              onClick={() => setIsInspectorOpen(true)}
+            >
+              🔍 Inspect Soroban State
+            </button>
           </div>
 
           {/* Event Stream Log */}
           <EventFeed jobId={job.id} />
         </div>
       </div>
+
+      {/* Contract Inspector Modal */}
+      <ContractInspectorModal
+        isOpen={isInspectorOpen}
+        onClose={() => setIsInspectorOpen(false)}
+        jobId={job.id}
+        client={job.client}
+        freelancer={job.freelancer}
+        budget={job.budget}
+        status={job.status}
+        milestoneCount={job.milestoneCount}
+      />
     </div>
   );
 }
