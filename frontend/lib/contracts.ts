@@ -2,41 +2,48 @@
  * Typed Soroban Contract Interaction Layer
  *
  * Provides typed TypeScript functions for posting jobs, submitting bids,
- * accepting bids, updating job status, funding escrow, releasing milestones,
- * refunding escrow, and querying contract state/reputation across all 3 Soroban contracts.
+ * withdrawing bids, accepting bids, milestone deliverables submission & approval,
+ * dispute arbitration, escrow refunds, and multi-factor reputation queries.
  */
 
 import { CONTRACTS, executeContractTx, queryContractState } from "./stellar";
-import { store, Job, Bid, EscrowRecord, MarketplaceEvent } from "./store";
+import { store, Job, Bid, EscrowRecord, MarketplaceEvent, Milestone, TalentProfile } from "./store";
 import { WalletType } from "./wallets";
 
-export type { Job, Bid, EscrowRecord, MarketplaceEvent };
+export type { Job, Bid, EscrowRecord, MarketplaceEvent, Milestone, TalentProfile };
 
 export interface ReputationScore {
   jobsCompleted: number;
   totalEarned: number;
   jobsFunded: number;
   totalSpent: number;
+  rating?: number;
+  reviewCount?: number;
+  tier?: string;
 }
 
 // ── Job Registry Contract Calls (contracts/job_registry/src/lib.rs) ───────────────
 
 /**
  * Invokes `post_job` on Job Registry contract.
- * Rust signature: `post_job(env: Env, client: Address, title: String, description: String, budget: i128, milestone_count: u32) -> u64`
  */
 export async function postJob(
   publicKey: string,
   walletType: WalletType,
   title: string,
   description: string,
+  category: "Smart Contracts" | "Frontend UI" | "Security Audit" | "DeFi" | "Full-Stack" | "Design",
   budget: number,
-  milestoneCount: number
+  milestoneCount: number,
+  deadlineStr?: string,
+  customMilestones?: Milestone[]
 ): Promise<{ job: Job; txHash: string }> {
+  const deadlineEpoch = deadlineStr ? Math.floor(new Date(deadlineStr).getTime() / 1000) : 0;
+
   const txResult = await executeContractTx(
     CONTRACTS.jobRegistry,
     "post_job",
-    [publicKey, title, description, budget, milestoneCount],
+    [publicKey, title, description, category, budget, milestoneCount, deadlineEpoch],
     publicKey,
     walletType
   );
@@ -46,8 +53,11 @@ export async function postJob(
       client: publicKey,
       title,
       description,
+      category,
       budget,
       milestoneCount,
+      deadline: deadlineStr,
+      milestones: customMilestones,
     },
     txResult.hash
   );
@@ -57,30 +67,51 @@ export async function postJob(
 
 /**
  * Invokes `place_bid` on Job Registry contract.
- * Rust signature: `place_bid(env: Env, freelancer: Address, job_id: u64, amount: i128, proposal: String) -> u32`
  */
 export async function placeBid(
   publicKey: string,
   walletType: WalletType,
   jobId: number,
   amount: number,
-  proposal: string
+  proposal: string,
+  estimatedDays: number = 7
 ): Promise<{ bid: Bid; txHash: string }> {
   const txResult = await executeContractTx(
     CONTRACTS.jobRegistry,
     "place_bid",
-    [publicKey, jobId, amount, proposal],
+    [publicKey, jobId, amount, proposal, estimatedDays],
     publicKey,
     walletType
   );
 
-  const newBid = store.addBid(jobId, publicKey, amount, proposal, txResult.hash);
+  const newBid = store.addBid(jobId, publicKey, amount, proposal, estimatedDays, txResult.hash);
   return { bid: newBid, txHash: txResult.hash };
 }
 
 /**
+ * Invokes `withdraw_bid` on Job Registry contract.
+ */
+export async function withdrawBid(
+  publicKey: string,
+  walletType: WalletType,
+  jobId: number,
+  bidId: string,
+  bidIndex: number
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
+    CONTRACTS.jobRegistry,
+    "withdraw_bid",
+    [publicKey, jobId, bidIndex],
+    publicKey,
+    walletType
+  );
+
+  const success = store.withdrawBid(jobId, bidId, publicKey);
+  return { success, txHash: txResult.hash };
+}
+
+/**
  * Invokes `accept_bid` on Job Registry contract.
- * Rust signature: `accept_bid(env: Env, client: Address, job_id: u64, bid_index: u32)`
  */
 export async function acceptBid(
   publicKey: string,
@@ -102,7 +133,6 @@ export async function acceptBid(
 
 /**
  * Invokes `update_status` on Job Registry contract.
- * Rust signature: `update_status(env: Env, caller: Address, job_id: u64, new_status: u32)`
  */
 export async function updateJobStatus(
   publicKey: string,
@@ -121,38 +151,22 @@ export async function updateJobStatus(
   return { success: txResult.status === "success", txHash: txResult.hash };
 }
 
-/**
- * Queries `get_job` on Job Registry contract.
- * Rust signature: `get_job(env: Env, job_id: u64) -> Job`
- */
 export async function getJob(jobId: number): Promise<Job | null> {
   const state = await queryContractState(CONTRACTS.jobRegistry, "get_job", [jobId]);
   return state || store.getJob(jobId) || null;
 }
 
-/**
- * Queries `get_bids` on Job Registry contract.
- * Rust signature: `get_bids(env: Env, job_id: u64) -> Vec<Bid>`
- */
 export async function getBids(jobId: number): Promise<Bid[]> {
   const bids = await queryContractState(CONTRACTS.jobRegistry, "get_bids", [jobId]);
   return bids || store.getBids(jobId);
 }
 
-/**
- * Queries `job_count` on Job Registry contract.
- * Rust signature: `job_count(env: Env) -> u64`
- */
 export async function getJobCount(): Promise<number> {
   const count = await queryContractState(CONTRACTS.jobRegistry, "job_count", []);
   return count !== null ? Number(count) : store.getJobs().length;
 }
 
-/**
- * Queries `list_jobs` on Job Registry contract.
- * Rust signature: `list_jobs(env: Env, start: u64, limit: u64) -> Vec<Job>`
- */
-export async function listJobs(start = 0, limit = 10): Promise<Job[]> {
+export async function listJobs(start = 0, limit = 20): Promise<Job[]> {
   const jobs = await queryContractState(CONTRACTS.jobRegistry, "list_jobs", [start, limit]);
   return jobs || store.getJobs();
 }
@@ -161,20 +175,20 @@ export async function listJobs(start = 0, limit = 10): Promise<Job[]> {
 
 /**
  * Invokes `fund_escrow` on Escrow contract.
- * Rust signature: `fund_escrow(env: Env, client: Address, job_id: u64, freelancer: Address, amount: i128, milestone_count: u32)`
  */
 export async function fundEscrow(
   publicKey: string,
   walletType: WalletType,
   jobId: number,
   freelancer: string,
+  arbitrator: string,
   amount: number,
   milestoneCount: number
 ): Promise<{ success: boolean; txHash: string }> {
   const txResult = await executeContractTx(
     CONTRACTS.escrow,
     "fund_escrow",
-    [publicKey, jobId, freelancer, amount, milestoneCount],
+    [publicKey, jobId, freelancer, arbitrator, amount, milestoneCount],
     publicKey,
     walletType
   );
@@ -183,29 +197,96 @@ export async function fundEscrow(
 }
 
 /**
- * Invokes `approve_milestone` on Escrow contract.
- * Rust signature: `approve_milestone(env: Env, client: Address, job_id: u64)`
+ * Freelancer submits milestone deliverable proof.
  */
-export async function approveMilestone(
+export async function submitMilestone(
   publicKey: string,
   walletType: WalletType,
-  jobId: number
+  jobId: number,
+  milestoneIndex: number,
+  deliverableHash: string
 ): Promise<{ success: boolean; txHash: string }> {
   const txResult = await executeContractTx(
     CONTRACTS.escrow,
-    "approve_milestone",
-    [publicKey, jobId],
+    "submit_milestone",
+    [publicKey, jobId, milestoneIndex, deliverableHash],
     publicKey,
     walletType
   );
 
-  const success = store.approveMilestone(jobId, publicKey, txResult.hash);
+  const success = store.submitMilestone(jobId, milestoneIndex, publicKey, deliverableHash);
+  return { success, txHash: txResult.hash };
+}
+
+/**
+ * Client approves milestone with counter-party star rating (1 to 5).
+ */
+export async function approveMilestone(
+  publicKey: string,
+  walletType: WalletType,
+  jobId: number,
+  milestoneIndex: number = 0,
+  rating: number = 5
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
+    CONTRACTS.escrow,
+    "approve_milestone",
+    [publicKey, jobId, milestoneIndex, rating, rating],
+    publicKey,
+    walletType
+  );
+
+  const success = store.approveMilestone(jobId, milestoneIndex, publicKey, rating, txResult.hash);
+  return { success, txHash: txResult.hash };
+}
+
+/**
+ * Raise a dispute on a milestone.
+ */
+export async function raiseDispute(
+  publicKey: string,
+  walletType: WalletType,
+  jobId: number,
+  milestoneIndex: number,
+  reason: string
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
+    CONTRACTS.escrow,
+    "raise_dispute",
+    [publicKey, jobId, milestoneIndex],
+    publicKey,
+    walletType
+  );
+
+  const success = store.raiseDispute(jobId, milestoneIndex, publicKey, reason);
+  return { success, txHash: txResult.hash };
+}
+
+/**
+ * Arbitrator resolves a disputed milestone.
+ */
+export async function resolveDispute(
+  publicKey: string,
+  walletType: WalletType,
+  jobId: number,
+  milestoneIndex: number,
+  freelancerPayout: number,
+  clientRefund: number
+): Promise<{ success: boolean; txHash: string }> {
+  const txResult = await executeContractTx(
+    CONTRACTS.escrow,
+    "resolve_dispute",
+    [publicKey, jobId, milestoneIndex, freelancerPayout, clientRefund],
+    publicKey,
+    walletType
+  );
+
+  const success = store.resolveDispute(jobId, milestoneIndex, publicKey, freelancerPayout, clientRefund);
   return { success, txHash: txResult.hash };
 }
 
 /**
  * Invokes `refund` on Escrow contract.
- * Rust signature: `refund(env: Env, client: Address, job_id: u64)`
  */
 export async function refundEscrow(
   publicKey: string,
@@ -224,10 +305,6 @@ export async function refundEscrow(
   return { success, txHash: txResult.hash };
 }
 
-/**
- * Queries `get_escrow` on Escrow contract.
- * Rust signature: `get_escrow(env: Env, job_id: u64) -> EscrowData`
- */
 export async function getEscrow(jobId: number): Promise<EscrowRecord | null> {
   const data = await queryContractState(CONTRACTS.escrow, "get_escrow", [jobId]);
   return data || store.getEscrow(jobId) || null;
@@ -235,10 +312,6 @@ export async function getEscrow(jobId: number): Promise<EscrowRecord | null> {
 
 // ── Reputation Contract Calls (contracts/reputation/src/lib.rs) ───────────────
 
-/**
- * Queries `get_score` on Reputation contract.
- * Rust signature: `get_score(env: Env, address: Address) -> ReputationScore`
- */
 export async function getReputationScore(address: string): Promise<ReputationScore> {
   const score = await queryContractState(CONTRACTS.reputation, "get_score", [address]);
   if (score) {

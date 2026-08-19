@@ -1,331 +1,313 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { MilestoneTracker } from "@/components/MilestoneTracker";
-import { Logo } from "@/components/Logo";
-
-/** Mock stats */
-const STATS = [
-  { value: "142", label: "Jobs Posted", icon: "📋" },
-  { value: "$87K", label: "Locked in Escrow", icon: "🔒" },
-  { value: "98%", label: "Completion Rate", icon: "🎯" },
-  { value: "320+", label: "Verified Freelancers", icon: "🌟" },
-];
-
-const WORKFLOW_STEPS = [
-  {
-    step: "01",
-    title: "Post Job & Define Milestones",
-    description: "Specify project deliverables, budget, and milestone splits. Soroban smart contract is initialized instantly.",
-    icon: "📝",
-    badge: "Client Action",
-  },
-  {
-    step: "02",
-    title: "Freelancers Bid & Stake Rep",
-    description: "Qualified freelancers submit bids with timelines. Bidders showcase their verified on-chain reputation.",
-    icon: "🤝",
-    badge: "Bidding Phase",
-  },
-  {
-    step: "03",
-    title: "Escrow Auto-Funded",
-    description: "Client accepts a bid and deposits XLM into the non-custodial smart contract. Funds are locked safely.",
-    icon: "🔐",
-    badge: "Smart Contract Lock",
-  },
-  {
-    step: "04",
-    title: "Deliver & Approve",
-    description: "Freelancer completes milestone work. Client reviews the work and signs the approval on Stellar.",
-    icon: "⚡",
-    badge: "Instant Release",
-  },
-];
-
-const FEATURES = [
-  {
-    icon: "🔒",
-    title: "Milestone Escrow",
-    description:
-      "Funds are locked in a Soroban smart contract and released incrementally as milestones are approved — protecting both parties.",
-  },
-  {
-    icon: "⚡",
-    title: "Instant Settlement",
-    description:
-      "Payments settle in seconds on Stellar, with near-zero fees. No waiting days for wire transfers or exchange delays.",
-  },
-  {
-    icon: "🌐",
-    title: "Borderless by Default",
-    description:
-      "Work with anyone, anywhere. No traditional bank accounts required — just your preferred Stellar wallet.",
-  },
-  {
-    icon: "⭐",
-    title: "On-Chain Reputation",
-    description:
-      "Every completed job builds a verifiable, tamper-proof reputation score stored directly on the Stellar ledger.",
-  },
-  {
-    icon: "📡",
-    title: "Real-Time Event Logs",
-    description:
-      "Track job postings, bids, and milestone releases in real time through Soroban contract events.",
-  },
-  {
-    icon: "🛡️",
-    title: "Non-Custodial Escrow",
-    description:
-      "The smart contract holds funds — never a centralized middleman. Release conditions are strictly enforced by code.",
-  },
-];
+import { JobCard } from "@/components/JobCard";
+import { EventFeed } from "@/components/EventFeed";
+import { store, Job, TalentProfile } from "@/lib/store";
 
 export default function HomePage() {
-  const [simStep, setSimStep] = useState(2); // 2 out of 3 milestones released
-  const [activeStepTab, setActiveStepTab] = useState(0);
+  const [featuredJobs, setFeaturedJobs] = useState<Job[]>([]);
+  const [topTalent, setTopTalent] = useState<TalentProfile[]>([]);
+  const [simStep, setSimStep] = useState(2);
 
-  const totalMilestones = 3;
-
-  function advanceSim() {
-    setSimStep((prev) => (prev >= totalMilestones ? 1 : prev + 1));
-  }
+  useEffect(() => {
+    setFeaturedJobs(store.getJobs().slice(0, 3));
+    setTopTalent(store.getTalentLeaderboard().slice(0, 3));
+  }, []);
 
   return (
-    <>
+    <div>
       {/* ── Hero Section ─────────────────────────────────── */}
       <section className="hero">
         <div className="container">
-          <div className="hero-layout-grid">
-            <div className="hero-content">
-              <div className="hero-badge">
-                <span className="network-dot pulse" />
-                Built on Stellar Soroban &middot; Testnet Live
-              </div>
+          <div className="hero-badge">
+            <span>✨ Powered by Stellar Soroban Smart Contracts</span>
+          </div>
 
-              <h1>
-                Freelance with
-                <br />
-                <span className="gradient-text">Trustless Escrow</span>
-              </h1>
+          <h1 className="hero-title">
+            The Trustless <span className="gradient-gold-text">Escrow Marketplace</span> for Elite Builders
+          </h1>
 
-              <p>
-                Post jobs, submit bids, and execute contracts through milestone-based
-                Soroban smart escrow. Guaranteed non-custodial protection, instant XLM payouts, and on-chain reputation.
-              </p>
+          <p className="hero-subtitle">
+            Lock funds in verifiable milestone escrows, hire pre-vetted top talent, and settle payments instantly
+            with zero middlemen and sub-5-second finality.
+          </p>
 
-              <div className="hero-actions">
-                <Link
-                  href="/jobs"
-                  className="btn btn-primary btn-lg"
-                  id="hero-browse-btn"
-                >
-                  Browse Open Jobs &rarr;
-                </Link>
-                <Link
-                  href="/jobs/new"
-                  className="btn btn-secondary btn-lg"
-                  id="hero-post-btn"
-                >
-                  ➕ Post a Job
-                </Link>
-              </div>
+          <div className="hero-cta-group">
+            <Link href="/jobs" className="btn btn-primary" style={{ padding: "14px 24px", fontSize: "1rem" }}>
+              🔍 Explore Active Jobs
+            </Link>
+            <Link href="/leaderboard" className="btn btn-secondary" style={{ padding: "14px 24px", fontSize: "1rem" }}>
+              🏆 Top Talent Leaderboard
+            </Link>
+            <Link href="/jobs/new" className="btn btn-outline-gold" style={{ padding: "14px 24px", fontSize: "1rem" }}>
+              ⚡ Post a Project
+            </Link>
+          </div>
 
-              <div className="hero-trust-bar" style={{ marginTop: "24px", display: "flex", alignItems: "center", gap: "16px" }}>
-                <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 600 }}>
-                  Supported Wallets:
-                </span>
-                <div style={{ display: "flex", gap: "10px", fontSize: "1.1rem" }}>
-                  <span title="Freighter Wallet">🚀 Freighter</span>
-                  <span title="xBull Wallet">🐂 xBull</span>
-                  <span title="Albedo">⚡ Albedo</span>
-                </div>
-              </div>
+          {/* Stats Bar */}
+          <div className="hero-stats-grid">
+            <div className="hero-stat-card card-gold">
+              <div className="hero-stat-value">520,000+</div>
+              <div className="hero-stat-label">XLM in Escrow</div>
             </div>
-
-            {/* Interactive Live Escrow Simulation Card */}
-            <div className="hero-preview-card">
-              <div className="hero-preview-badge">
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span className="badge badge-open">
-                    <span className="badge-dot" /> Live Escrow Contract
-                  </span>
-                </div>
-                <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                  Contract #SB82…9F2A
-                </span>
+            <div className="hero-stat-card">
+              <div className="hero-stat-value" style={{ color: "var(--emerald-light)" }}>
+                &lt; 5s
               </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-                  Soroban Smart Contract Audit
-                </h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: "4px 0 0 0" }}>
-                  Client: <code style={{ color: "var(--cyan-light)" }}>GDF7…K89L</code> &middot; Freelancer: <code style={{ color: "var(--purple-light)" }}>GA3M…W22P</code>
-                </p>
+              <div className="hero-stat-label">Finality Time</div>
+            </div>
+            <div className="hero-stat-card">
+              <div className="hero-stat-value" style={{ color: "var(--violet-light)" }}>
+                4.96 ★
               </div>
+              <div className="hero-stat-label">Talent Rating</div>
+            </div>
+            <div className="hero-stat-card">
+              <div className="hero-stat-value" style={{ color: "var(--text-primary)" }}>
+                100%
+              </div>
+              <div className="hero-stat-label">Non-Custodial</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-              <MilestoneTracker
-                total={3}
-                approved={simStep}
-                released={simStep}
-                amounts={[1500, 1500, 1500]}
-              />
+      {/* ── Top Talent Leaderboard Teaser ────────────────── */}
+      <section style={{ padding: "40px 0 60px" }}>
+        <div className="container">
+          <div className="leaderboard-header">
+            <div>
+              <span className="category-pill" style={{ marginBottom: "8px" }}>
+                Pre-Vetted Soroban Talent
+              </span>
+              <h2 style={{ fontSize: "clamp(1.6rem, 4vw, 2.2rem)" }}>
+                Top <span className="gradient-gold-text">Ranked Freelancers</span>
+              </h2>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+                Compete with the ecosystem&apos;s best developers, security auditors, and DeFi architects.
+              </p>
+            </div>
+            <Link href="/leaderboard" className="btn btn-secondary">
+              View Full Leaderboard &rarr;
+            </Link>
+          </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: "16px",
-                  paddingTop: "14px",
-                  borderTop: "1px solid var(--border-light)",
-                }}
-              >
+          <div className="talent-grid">
+            {topTalent.map((talent) => (
+              <div key={talent.address} className="talent-card">
                 <div>
-                  <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Total Contract Escrow</span>
-                  <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)" }}>
-                    4,500 <span style={{ fontSize: "0.85rem", color: "var(--cyan-light)" }}>XLM</span>
+                  <div className="talent-top">
+                    <div className="talent-avatar">{talent.avatar}</div>
+                    <div className="talent-meta">
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "4px" }}>
+                        <h3 className="talent-name">{talent.name}</h3>
+                        <span
+                          className={`tier-badge ${
+                            talent.tier === "Elite Master" ? "tier-elite" : "tier-diamond"
+                          }`}
+                        >
+                          {talent.tier}
+                        </span>
+                      </div>
+                      <div className="talent-handle">{talent.handle}</div>
+                      <div style={{ marginTop: "4px", fontSize: "0.82rem", color: "var(--gold-light)", fontWeight: 700 }}>
+                        {talent.rating} ★ <span style={{ color: "var(--text-muted)" }}>({talent.reviewCount} reviews)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginBottom: "16px", lineHeight: "1.5" }}>
+                    {talent.bio}
+                  </p>
+
+                  <div className="talent-stats">
+                    <div>
+                      <div className="talent-stat-val" style={{ color: "var(--gold-light)" }}>
+                        {talent.totalEarned.toLocaleString()}
+                      </div>
+                      <div className="talent-stat-lbl">XLM Earned</div>
+                    </div>
+                    <div>
+                      <div className="talent-stat-val" style={{ color: "var(--emerald-light)" }}>
+                        {talent.jobsCompleted}
+                      </div>
+                      <div className="talent-stat-lbl">Completed</div>
+                    </div>
+                    <div>
+                      <div className="talent-stat-val">{talent.successRate}%</div>
+                      <div className="talent-stat-lbl">Success Rate</div>
+                    </div>
+                  </div>
+
+                  <div className="skills-pill-group">
+                    {talent.skills.map((skill) => (
+                      <span key={skill} className="skill-pill">
+                        {skill}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={advanceSim}
-                  title="Click to simulate approving and releasing next milestone"
-                >
-                  ⚡ {simStep >= 3 ? "Reset Demo Escrow" : `Release Milestone ${simStep + 1}`}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats Bar ───────────────────────────────────── */}
-      <section className="container" style={{ marginTop: "-20px", position: "relative", zIndex: 10 }}>
-        <div className="stats-grid">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="card stat-card hover-glow">
-              <div style={{ fontSize: "1.5rem", marginBottom: "4px" }}>{stat.icon}</div>
-              <div className="stat-value">{stat.value}</div>
-              <div className="stat-label">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Interactive How It Works Workflow ─────────────── */}
-      <section className="container" style={{ padding: "80px 0 40px 0" }} id="how-it-works">
-        <div style={{ textAlign: "center", maxWidth: "650px", margin: "0 auto 48px auto" }}>
-          <span className="category-tag" style={{ marginBottom: "12px" }}>
-            Transparent Protocol
-          </span>
-          <h2 className="section-title">
-            How <span className="text-gradient">StellarEscrow</span> Works
-          </h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>
-            An automated, non-custodial milestone lifecycle designed to protect freelancers and clients alike.
-          </p>
-        </div>
-
-        <div className="workflow-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "24px" }}>
-          {WORKFLOW_STEPS.map((w, idx) => (
-            <div
-              key={w.step}
-              className="card hover-glow"
-              style={{
-                padding: "28px 24px",
-                position: "relative",
-                border: activeStepTab === idx ? "1px solid var(--purple-light)" : undefined,
-                background: activeStepTab === idx ? "var(--gradient-card)" : undefined,
-                cursor: "pointer",
-              }}
-              onClick={() => setActiveStepTab(idx)}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontWeight: 800,
-                    fontSize: "1.4rem",
-                    color: "var(--purple-light)",
-                  }}
-                >
-                  {w.step}
-                </span>
-                <span className="badge badge-open" style={{ fontSize: "0.72rem" }}>
-                  {w.badge}
-                </span>
-              </div>
-              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>{w.icon}</div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "8px" }}>
-                {w.title}
-              </h3>
-              <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", lineHeight: "1.5" }}>
-                {w.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Core Platform Features ───────────────────────── */}
-      <section className="features-section">
-        <div className="container">
-          <div style={{ textAlign: "center", maxWidth: "600px", margin: "0 auto 48px auto" }}>
-            <h2 className="section-title">
-              Why Choose <span className="text-gradient">StellarEscrow</span>?
-            </h2>
-            <p style={{ color: "var(--text-secondary)" }}>
-              Built from the ground up for speed, security, and global accessibility on the Stellar blockchain.
-            </p>
-          </div>
-
-          <div className="features-grid">
-            {FEATURES.map((feature) => (
-              <div key={feature.title} className="card feature-card hover-glow">
-                <div className="feature-icon">{feature.icon}</div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
+                <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "14px", marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 800, fontFamily: "var(--font-mono)" }}>
+                    {talent.hourlyRate} <small style={{ color: "var(--gold)" }}>XLM/hr</small>
+                  </span>
+                  <Link href="/leaderboard" className="btn btn-outline-gold" style={{ padding: "6px 14px", fontSize: "0.82rem" }}>
+                    Hire Profile &rarr;
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Call To Action Banner ────────────────────────── */}
-      <section className="container" style={{ padding: "60px 0 80px 0" }}>
-        <div
-          className="card"
-          style={{
-            background: "var(--gradient-card)",
-            border: "1px solid var(--purple-glow)",
-            padding: "48px 32px",
-            textAlign: "center",
-            borderRadius: "var(--radius-xl)",
-            boxShadow: "0 0 40px rgba(124, 58, 237, 0.2)",
-          }}
-        >
-          <Logo size="lg" clickable={false} />
-          <h2 style={{ fontSize: "2rem", fontWeight: 800, margin: "20px 0 12px 0", color: "var(--text-primary)" }}>
-            Ready to Start Freelancing on Stellar?
-          </h2>
-          <p style={{ maxWidth: "600px", margin: "0 auto 28px auto", color: "var(--text-secondary)", fontSize: "1.05rem" }}>
-            Join hundreds of developers and clients using decentralized smart escrow with instant XLM finality.
-          </p>
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-            <Link href="/jobs" className="btn btn-primary btn-lg">
-              Explore Available Jobs
-            </Link>
-            <Link href="/jobs/new" className="btn btn-secondary btn-lg">
-              Post a New Project
-            </Link>
+      {/* ── Featured Jobs & Live Event Feed ─────────────── */}
+      <section style={{ padding: "20px 0 80px" }}>
+        <div className="container">
+          <div className="grid-responsive-cols" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "32px", alignItems: "flex-start" }}>
+            {/* Featured Jobs Column */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                <div>
+                  <h2 style={{ fontSize: "clamp(1.4rem, 3.5vw, 1.8rem)" }}>
+                    Featured <span className="gradient-gold-text">Open Escrows</span>
+                  </h2>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                    Verified jobs ready for bidding and milestone locking.
+                  </p>
+                </div>
+                <Link href="/jobs" className="btn btn-secondary" style={{ padding: "8px 16px", fontSize: "0.85rem" }}>
+                  All Jobs &rarr;
+                </Link>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {featuredJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    id={job.id}
+                    title={job.title}
+                    description={job.description}
+                    budget={job.budget}
+                    milestones={job.milestoneCount}
+                    status={job.status}
+                    bidCount={job.bidCount}
+                    client={job.client}
+                    category={job.category}
+                    deadline={job.deadline}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Event Feed Column */}
+            <div>
+              <EventFeed />
+            </div>
           </div>
         </div>
       </section>
-    </>
+
+      {/* ── How Escrow Works & Interactive Demo ─────────── */}
+      <section style={{ padding: "60px 0", background: "var(--bg-secondary)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <span className="category-pill" style={{ marginBottom: "8px" }}>
+              Non-Custodial Security Model
+            </span>
+            <h2 style={{ fontSize: "clamp(1.8rem, 4.5vw, 2.4rem)", marginBottom: "12px" }}>
+              How Soroban <span className="gradient-emerald-text">Milestone Escrow Works</span>
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem", maxWidth: "680px", margin: "0 auto" }}>
+              Never risk client upfront funds or unpaid freelancer labor. Stellar smart contracts automate security.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "48px" }}>
+            <div className="card" style={{ padding: "24px" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>📝</div>
+              <h3 style={{ fontSize: "1.15rem", marginBottom: "8px" }}>1. Post & Custom Milestones</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
+                Client publishes job specs with custom milestone budgets and deadlines onto the Soroban Job Registry.
+              </p>
+            </div>
+
+            <div className="card" style={{ padding: "24px" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>🔒</div>
+              <h3 style={{ fontSize: "1.15rem", marginBottom: "8px" }}>2. Non-Custodial Lock</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
+                On bid acceptance, 100% of the funds transfer into the autonomous Escrow Contract. No admin can access tokens.
+              </p>
+            </div>
+
+            <div className="card" style={{ padding: "24px" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>⚡</div>
+              <h3 style={{ fontSize: "1.15rem", marginBottom: "8px" }}>3. Deliver & Verify</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
+                Freelancer delivers work with cryptographic hashes. Client approves each milestone to trigger instant release.
+              </p>
+            </div>
+
+            <div className="card" style={{ padding: "24px" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>⭐</div>
+              <h3 style={{ fontSize: "1.15rem", marginBottom: "8px" }}>4. Rate & Level Up</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
+                Completion updates both parties&apos; on-chain reputation scores, unlocking Diamond and Elite Master tiers.
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Escrow Simulator Card */}
+          <div className="card card-gold" style={{ maxWidth: "780px", margin: "0 auto", padding: "clamp(18px, 4vw, 28px)", textAlign: "center" }}>
+            <h3 style={{ fontSize: "clamp(1.15rem, 3.5vw, 1.35rem)", marginBottom: "8px" }}>
+              🎮 Interactive Soroban Escrow Simulator
+            </h3>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "20px" }}>
+              Simulate how milestone releases trigger on-chain state updates and reputation increases:
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", marginBottom: "24px" }}>
+              {[1, 2, 3].map((step) => (
+                <div
+                  key={step}
+                  style={{
+                    padding: "12px 10px",
+                    borderRadius: "var(--radius-md)",
+                    background: simStep >= step ? "var(--gold-subtle)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${simStep >= step ? "var(--gold)" : "var(--border)"}`,
+                    color: simStep >= step ? "var(--gold-light)" : "var(--text-muted)",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <div>Milestone {step} ({step * 33}%)</div>
+                  <div style={{ fontSize: "0.75rem", marginTop: "4px", fontWeight: 600 }}>
+                    {simStep >= step ? "✓ Released" : "🔒 Locked"}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className="btn btn-primary"
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                padding: "14px 18px",
+                fontSize: "clamp(0.85rem, 3.2vw, 1rem)",
+                lineHeight: 1.35,
+              }}
+              onClick={() => setSimStep((prev) => (prev >= 3 ? 1 : prev + 1))}
+            >
+              🔄 Trigger Milestone Release Simulation (State: {simStep}/3)
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

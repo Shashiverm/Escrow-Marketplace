@@ -13,6 +13,7 @@ interface BidFormProps {
 export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
   const { publicKey, walletType, isConnected } = useWallet();
   const [amount, setAmount] = useState("");
+  const [estimatedDays, setEstimatedDays] = useState("7");
   const [proposal, setProposal] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -23,7 +24,7 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
     e.preventDefault();
     if (!amount || !proposal) return;
     if (!isConnected || !publicKey || !walletType) {
-      setError("Please connect your wallet first to place a bid");
+      setError("Please connect your wallet first to place a bid on-chain.");
       return;
     }
 
@@ -36,7 +37,8 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
         walletType,
         jobId,
         parseInt(amount),
-        proposal
+        proposal,
+        parseInt(estimatedDays) || 7
       );
       setTxHash(res.txHash);
       setSubmitted(true);
@@ -52,20 +54,20 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
 
   if (submitted) {
     return (
-      <div className="card" style={{ textAlign: "center", padding: "24px" }}>
-        <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🎉</div>
-        <h3 style={{ marginBottom: "4px" }}>Bid Submitted!</h3>
-        <p style={{ color: "var(--text-secondary, #94a3b8)", fontSize: "0.9rem", marginBottom: "12px" }}>
-          Your bid of {parseInt(amount).toLocaleString()} XLM for job #{jobId} has been placed.
+      <div className="card card-emerald" style={{ textAlign: "center", padding: "24px" }}>
+        <div style={{ fontSize: "2.2rem", marginBottom: "8px" }}>🎉</div>
+        <h3 style={{ marginBottom: "4px", color: "var(--emerald-light)" }}>Bid Successfully Placed!</h3>
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "14px" }}>
+          Your bid of {parseInt(amount).toLocaleString()} XLM ({estimatedDays} days delivery) has been recorded in the Soroban Job Registry.
         </p>
         {txHash && (
           <a
             href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: "0.82rem", color: "var(--cyan-light, #38bdf8)", wordBreak: "break-all" }}
+            style={{ fontSize: "0.82rem", color: "var(--gold-light)", wordBreak: "break-all" }}
           >
-            View on Stellar Expert →
+            View Transaction on Stellar Expert &rarr;
           </a>
         )}
       </div>
@@ -79,7 +81,8 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
           style={{
             padding: "10px 14px",
             borderRadius: "8px",
-            background: "rgba(239, 68, 68, 0.1)",
+            background: "var(--error-bg)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
             color: "#f87171",
             fontSize: "0.85rem",
             marginBottom: "16px",
@@ -94,40 +97,61 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
           style={{
             padding: "10px 14px",
             borderRadius: "8px",
-            background: "rgba(56, 189, 248, 0.1)",
-            color: "#38bdf8",
+            background: "var(--gold-subtle)",
+            border: "1px solid var(--border-gold)",
+            color: "var(--gold-light)",
             fontSize: "0.85rem",
             marginBottom: "16px",
           }}
         >
-          ℹ️ Connect your Stellar wallet to submit a bid on-chain.
+          ⚡ Connect your Freighter / Stellar wallet to submit a cryptographic bid.
         </div>
       )}
 
-      <div className="form-group">
-        <label className="form-label" htmlFor={`bid-amount-${jobId}`}>
-          Bid Amount (XLM)
-        </label>
-        <input
-          id={`bid-amount-${jobId}`}
-          type="number"
-          className="form-input"
-          placeholder={`Suggested budget: ${jobBudget.toLocaleString()} XLM`}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min={1}
-          required
-        />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label" htmlFor={`bid-amount-${jobId}`}>
+            Bid Amount (XLM)
+          </label>
+          <input
+            id={`bid-amount-${jobId}`}
+            type="number"
+            className="form-input"
+            placeholder={`Budget: ${jobBudget.toLocaleString()} XLM`}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min={1}
+            required
+          />
+        </div>
+
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label" htmlFor={`bid-days-${jobId}`}>
+            Estimated Days
+          </label>
+          <input
+            id={`bid-days-${jobId}`}
+            type="number"
+            className="form-input"
+            placeholder="e.g. 7"
+            value={estimatedDays}
+            onChange={(e) => setEstimatedDays(e.target.value)}
+            min={1}
+            max={365}
+            required
+          />
+        </div>
       </div>
 
       <div className="form-group">
         <label className="form-label" htmlFor={`bid-proposal-${jobId}`}>
-          Proposal
+          Proposal & Technical Approach
         </label>
         <textarea
           id={`bid-proposal-${jobId}`}
           className="form-textarea"
-          placeholder="Describe your qualifications, approach, and timeline…"
+          rows={4}
+          placeholder="Describe your qualifications, Soroban / Rust experience, and milestone deliverables…"
           value={proposal}
           onChange={(e) => setProposal(e.target.value)}
           required
@@ -141,7 +165,7 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
         style={{ width: "100%" }}
         id={`bid-submit-${jobId}`}
       >
-        {isSubmitting ? "Signing & Submitting…" : "Submit Bid with Connected Wallet"}
+        {isSubmitting ? "Signing & Submitting on Soroban…" : "🚀 Submit Bid with Connected Wallet"}
       </button>
     </form>
   );

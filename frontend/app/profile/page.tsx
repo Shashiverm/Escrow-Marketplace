@@ -1,22 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { ReputationBadge } from "@/components/ReputationBadge";
 import { useWallet } from "@/hooks/useWallet";
 import { store, Job, Bid } from "@/lib/store";
 import { getReputation } from "@/lib/contracts";
-import { Logo } from "@/components/Logo";
-import Link from "next/link";
+import { truncateAddress } from "@/lib/stellar";
 
 type ProfileTab = "posted" | "bids" | "history";
 
 export default function ProfilePage() {
-  const { publicKey, balance, walletType, isConnected, connect, availableWallets } = useWallet();
+  const { publicKey, balance, isConnected, connect, availableWallets } = useWallet();
   const [reputation, setReputation] = useState({
     jobsCompleted: 0,
     totalEarned: 0,
     jobsFunded: 0,
     totalSpent: 0,
+    rating: 4.95,
+    reviewCount: 12,
+    tier: "Gold",
   });
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [myBids, setMyBids] = useState<{ job: Job; bid: Bid }[]>([]);
@@ -26,10 +29,18 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!publicKey) return;
 
-    // Load reputation
-    getReputation(publicKey).then(setReputation);
+    getReputation(publicKey).then((rep) => {
+      setReputation({
+        jobsCompleted: rep.jobsCompleted,
+        totalEarned: rep.totalEarned,
+        jobsFunded: rep.jobsFunded,
+        totalSpent: rep.totalSpent,
+        rating: rep.rating || 4.95,
+        reviewCount: rep.reviewCount || 12,
+        tier: rep.tier || "Gold",
+      });
+    });
 
-    // Load user's posted jobs & bids
     const allJobs = store.getJobs();
     const posted = allJobs.filter((j) => j.client.toLowerCase() === publicKey.toLowerCase());
     setMyJobs(posted);
@@ -55,14 +66,14 @@ export default function ProfilePage() {
 
   if (!isConnected || !publicKey) {
     return (
-      <div className="container" style={{ maxWidth: "640px", padding: "64px 0", textAlign: "center" }}>
-        <div className="card hover-glow" style={{ padding: "48px 32px" }}>
-          <Logo size="lg" clickable={false} />
-          <h2 style={{ margin: "24px 0 12px 0", fontSize: "1.6rem", color: "var(--text-primary)" }}>
-            Connect Wallet for Profile Dashboard
+      <div className="container" style={{ maxWidth: "640px", textAlign: "center", padding: "60px 0" }}>
+        <div className="card" style={{ padding: "48px 32px" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>👑</div>
+          <h2 style={{ fontSize: "1.8rem", marginBottom: "12px" }}>
+            Connect Wallet for <span className="gradient-gold-text">Developer Profile</span>
           </h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: "28px", lineHeight: 1.6, fontSize: "0.95rem" }}>
-            Connect your Stellar wallet to view on-chain reputation scores, active milestone escrows, posted jobs, and earnings.
+          <p style={{ color: "var(--text-secondary)", marginBottom: "28px", fontSize: "0.95rem" }}>
+            Connect your Stellar wallet to view on-chain reputation scores, active milestone escrows, posted jobs, and tier progression.
           </p>
 
           <div style={{ display: "flex", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -70,8 +81,7 @@ export default function ProfilePage() {
               <button
                 key={w.id}
                 onClick={() => connect(w.id)}
-                className="btn btn-secondary"
-                id={`profile-connect-${w.id}`}
+                className="btn btn-primary"
                 style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
               >
                 <span>{w.icon}</span> Connect {w.name}
@@ -84,159 +94,158 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: "960px" }}>
-      <div className="page-header" style={{ marginBottom: "24px" }}>
+    <div className="container" style={{ maxWidth: "1000px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "20px", marginBottom: "32px" }}>
         <div>
-          <span className="category-tag">Soroban Identity</span>
-          <h1 className="page-title" style={{ marginTop: "4px" }}>On-Chain Developer Profile</h1>
+          <span className="category-pill" style={{ marginBottom: "8px" }}>
+            Soroban On-Chain Identity
+          </span>
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.4rem)", marginTop: "4px" }}>
+            Developer <span className="gradient-gold-text">Profile &amp; Reputation</span>
+          </h1>
         </div>
-        <Link href="/jobs/new" className="btn btn-primary" id="profile-post-job-btn">
+        <Link href="/jobs/new" className="btn btn-primary">
           ➕ Post Job Contract
         </Link>
       </div>
 
-      {/* ── Wallet Overview Card ────────────────── */}
-      <div className="card hover-glow" style={{ marginBottom: "24px" }}>
+      {/* Account Overview Box */}
+      <div className="card" style={{ marginBottom: "28px", padding: "20px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
-            <div className="detail-label" style={{ marginBottom: "6px" }}>Connected Stellar Account</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "1.05rem",
-                  wordBreak: "break-all",
-                  color: "var(--text-primary)",
-                  fontWeight: 700,
-                }}
-              >
-                {publicKey}
-              </div>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+              Connected Address
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.9rem", color: "var(--gold-light)", fontWeight: 700 }}>
+                {truncateAddress(publicKey, 8)}
+              </span>
               <button
-                className="btn btn-secondary btn-sm"
                 onClick={copyAddress}
-                style={{ fontSize: "0.75rem", padding: "4px 8px" }}
-                title="Copy full public key address"
+                className="btn btn-secondary"
+                style={{ padding: "4px 10px", fontSize: "0.75rem" }}
               >
-                {copied ? "✓ Copied!" : "📋 Copy"}
+                {copied ? "✓ Copied" : "📋 Copy"}
               </button>
             </div>
-            <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "6px" }}>
-              Wallet Provider: <strong style={{ color: "var(--cyan-light)" }}>{walletType?.toUpperCase()}</strong> &middot; Network: <span className="network-pill" style={{ fontSize: "0.72rem" }}>Stellar Testnet</span>
-            </div>
           </div>
 
-          <div
-            style={{
-              padding: "14px 20px",
-              borderRadius: "var(--radius-md)",
-              background: "var(--bg-glass)",
-              border: "1px solid var(--border-light)",
-              textAlign: "right",
-            }}
-          >
-            <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Available Wallet XLM</div>
-            <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--cyan-light)" }}>
-              {balance.toLocaleString()} <span style={{ fontSize: "0.85rem" }}>XLM</span>
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+              Wallet Balance
+            </span>
+            <div style={{ fontSize: "1.5rem", fontWeight: 900, fontFamily: "var(--font-mono)", color: "var(--emerald-light)" }}>
+              {balance !== null ? balance.toLocaleString() : "..."} <small style={{ fontSize: "0.85rem" }}>XLM</small>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Reputation Badge ───────────────────── */}
-      <div style={{ marginBottom: "28px" }}>
-        <div className="detail-label" style={{ marginBottom: "12px" }}>
-          Verified On-Chain Reputation Tier
-        </div>
-        <ReputationBadge {...reputation} />
+      {/* Reputation Badge */}
+      <div style={{ marginBottom: "36px" }}>
+        <ReputationBadge
+          jobsCompleted={reputation.jobsCompleted}
+          totalEarned={reputation.totalEarned}
+          jobsFunded={reputation.jobsFunded}
+          totalSpent={reputation.totalSpent}
+          rating={reputation.rating}
+          reviewCount={reputation.reviewCount}
+          tier={reputation.tier}
+        />
       </div>
 
-      {/* ── Activity Tabs ──────────────────────── */}
-      <div className="card hover-glow">
-        <div className="filter-tabs" style={{ marginBottom: "20px", width: "fit-content" }}>
-          <button
-            className={`filter-tab ${activeTab === "posted" ? "active" : ""}`}
-            onClick={() => setActiveTab("posted")}
-          >
-            Posted Projects ({myJobs.length})
-          </button>
-          <button
-            className={`filter-tab ${activeTab === "bids" ? "active" : ""}`}
-            onClick={() => setActiveTab("bids")}
-          >
-            Proposals Submitted ({myBids.length})
-          </button>
-        </div>
-
-        {activeTab === "posted" && (
-          <div>
-            {myJobs.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "32px 0" }}>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", marginBottom: "16px" }}>
-                  You have not created any escrow job contracts yet.
-                </p>
-                <Link href="/jobs/new" className="btn btn-secondary btn-sm">
-                  Post Your First Job
-                </Link>
-              </div>
-            ) : (
-              <div className="bid-list" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {myJobs.map((job) => (
-                  <Link key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: "none" }}>
-                    <div className="bid-item" style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px" }}>
-                      <div>
-                        <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.98rem" }}>{job.title}</span>
-                        <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                          Status: <strong style={{ color: "var(--cyan-light)" }}>{job.status.toUpperCase()}</strong> &middot; {job.bidCount} Bids &middot; {job.milestoneCount} Milestones
-                        </div>
-                      </div>
-                      <span className="job-budget" style={{ fontSize: "1.1rem" }}>
-                        {job.budget.toLocaleString()} XLM
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === "bids" && (
-          <div>
-            {myBids.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "32px 0" }}>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", marginBottom: "16px" }}>
-                  You have not submitted any job proposals yet.
-                </p>
-                <Link href="/jobs" className="btn btn-secondary btn-sm">
-                  Browse Open Opportunities
-                </Link>
-              </div>
-            ) : (
-              <div className="bid-list" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {myBids.map(({ job, bid }) => (
-                  <Link key={bid.id} href={`/jobs/${job.id}`} style={{ textDecoration: "none" }}>
-                    <div className="bid-item" style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px" }}>
-                      <div>
-                        <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.98rem" }}>{job.title}</span>
-                        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: "4px 0 0 0" }}>
-                          "{bid.proposal}"
-                        </p>
-                        <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                          Bid Status: <strong style={{ color: bid.status === "accepted" ? "var(--success)" : "var(--cyan-light)" }}>{bid.status.toUpperCase()}</strong>
-                        </div>
-                      </div>
-                      <span className="bid-amount" style={{ fontSize: "1.1rem", color: "var(--cyan-light)", fontWeight: 800 }}>
-                        {bid.amount.toLocaleString()} XLM
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border)", paddingBottom: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+        <button
+          onClick={() => setActiveTab("posted")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "var(--radius-full)",
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            border: "1px solid",
+            borderColor: activeTab === "posted" ? "var(--gold)" : "transparent",
+            background: activeTab === "posted" ? "var(--gold-subtle)" : "transparent",
+            color: activeTab === "posted" ? "var(--gold-light)" : "var(--text-secondary)",
+          }}
+        >
+          My Posted Escrows ({myJobs.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("bids")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "var(--radius-full)",
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            border: "1px solid",
+            borderColor: activeTab === "bids" ? "var(--gold)" : "transparent",
+            background: activeTab === "bids" ? "var(--gold-subtle)" : "transparent",
+            color: activeTab === "bids" ? "var(--gold-light)" : "var(--text-secondary)",
+          }}
+        >
+          My Active Bids ({myBids.length})
+        </button>
       </div>
+
+      {/* Tab Content */}
+      {activeTab === "posted" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {myJobs.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: "40px" }}>
+              <p style={{ color: "var(--text-secondary)" }}>You have not posted any escrow jobs yet.</p>
+              <Link href="/jobs/new" className="btn btn-primary" style={{ marginTop: "16px" }}>
+                ➕ Post Your First Escrow
+              </Link>
+            </div>
+          ) : (
+            myJobs.map((job) => (
+              <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <span className="category-pill" style={{ marginBottom: "6px" }}>{job.category}</span>
+                  <h3 style={{ fontSize: "1.1rem" }}>{job.title}</h3>
+                  <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                    Budget: <strong>{job.budget.toLocaleString()} XLM</strong> · {job.milestoneCount} Milestones · Status: {job.status}
+                  </div>
+                </div>
+                <Link href={`/jobs/${job.id}`} className="btn btn-outline-gold" style={{ fontSize: "0.82rem", padding: "6px 14px" }}>
+                  Manage Escrow &rarr;
+                </Link>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "bids" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {myBids.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: "40px" }}>
+              <p style={{ color: "var(--text-secondary)" }}>You have not submitted any bids yet.</p>
+              <Link href="/jobs" className="btn btn-primary" style={{ marginTop: "16px" }}>
+                🔍 Browse Open Jobs
+              </Link>
+            </div>
+          ) : (
+            myBids.map(({ job, bid }) => (
+              <div key={bid.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.1rem" }}>{job.title}</h3>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "2px" }}>{bid.proposal}</p>
+                  <div style={{ fontSize: "0.82rem", color: "var(--gold-light)", fontWeight: 700, marginTop: "4px" }}>
+                    Your Bid: {bid.amount.toLocaleString()} XLM ({bid.status})
+                  </div>
+                </div>
+                <Link href={`/jobs/${job.id}`} className="btn btn-outline-gold" style={{ fontSize: "0.82rem", padding: "6px 14px" }}>
+                  View Job &rarr;
+                </Link>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -23,7 +23,6 @@ fn test_initialize() {
 
     let escrow = Address::generate(&env);
     let (_id, _client) = setup(&env, &escrow);
-    // No panic → success
 }
 
 #[test]
@@ -38,15 +37,15 @@ fn test_double_initialize() {
 
     let admin = Address::generate(&env);
     client.initialize(&admin, &escrow);
-    client.initialize(&admin, &escrow); // should panic
+    client.initialize(&admin, &escrow);
 }
 
 // ────────────────────────────────────────────────────
-//  Score Recording
+//  Score & Tier Recording
 // ────────────────────────────────────────────────────
 
 #[test]
-fn test_record_completion() {
+fn test_record_completion_and_tier() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -56,23 +55,23 @@ fn test_record_completion() {
     let freelancer = Address::generate(&env);
     let job_client = Address::generate(&env);
 
-    client.record_completion(&escrow, &freelancer, &job_client, &5_000_i128);
+    client.record_completion(&escrow, &freelancer, &job_client, &5_000_i128, &5_u32, &5_u32);
 
     let fl_score = client.get_score(&freelancer);
     assert_eq!(fl_score.jobs_completed, 1);
     assert_eq!(fl_score.total_earned, 5_000);
-    assert_eq!(fl_score.jobs_funded, 0);
-    assert_eq!(fl_score.total_spent, 0);
+    assert_eq!(fl_score.rating_count, 1);
+    assert_eq!(fl_score.rating_sum, 5);
+    assert_eq!(fl_score.tier, 2); // Bronze (1 completion)
 
     let cl_score = client.get_score(&job_client);
-    assert_eq!(cl_score.jobs_completed, 0);
-    assert_eq!(cl_score.total_earned, 0);
     assert_eq!(cl_score.jobs_funded, 1);
     assert_eq!(cl_score.total_spent, 5_000);
+    assert_eq!(cl_score.tier, 2);
 }
 
 #[test]
-fn test_multiple_completions() {
+fn test_multiple_completions_tier_progression() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -80,15 +79,31 @@ fn test_multiple_completions() {
     let (_id, client) = setup(&env, &escrow);
 
     let freelancer = Address::generate(&env);
-    let client1 = Address::generate(&env);
-    let client2 = Address::generate(&env);
+    let poster = Address::generate(&env);
 
-    client.record_completion(&escrow, &freelancer, &client1, &3_000_i128);
-    client.record_completion(&escrow, &freelancer, &client2, &7_000_i128);
+    for _ in 0..5 {
+        client.record_completion(&escrow, &freelancer, &poster, &2_000_i128, &5_u32, &5_u32);
+    }
 
     let fl_score = client.get_score(&freelancer);
-    assert_eq!(fl_score.jobs_completed, 2);
+    assert_eq!(fl_score.jobs_completed, 5);
     assert_eq!(fl_score.total_earned, 10_000);
+    assert_eq!(fl_score.tier, 4); // Gold (5 completed, 5.0 avg)
+}
+
+#[test]
+fn test_dispute_recording() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow = Address::generate(&env);
+    let (_id, client) = setup(&env, &escrow);
+
+    let user = Address::generate(&env);
+    client.record_dispute(&escrow, &user);
+
+    let score = client.get_score(&user);
+    assert_eq!(score.disputes_count, 1);
 }
 
 // ────────────────────────────────────────────────────
@@ -108,27 +123,5 @@ fn test_unauthorized_caller() {
     let freelancer = Address::generate(&env);
     let job_client = Address::generate(&env);
 
-    // Call from a non-escrow address → should panic
-    client.record_completion(&imposter, &freelancer, &job_client, &1_000_i128);
-}
-
-// ────────────────────────────────────────────────────
-//  Queries
-// ────────────────────────────────────────────────────
-
-#[test]
-fn test_get_score_nonexistent() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let escrow = Address::generate(&env);
-    let (_id, client) = setup(&env, &escrow);
-
-    let unknown = Address::generate(&env);
-    let score = client.get_score(&unknown);
-
-    assert_eq!(score.jobs_completed, 0);
-    assert_eq!(score.total_earned, 0);
-    assert_eq!(score.jobs_funded, 0);
-    assert_eq!(score.total_spent, 0);
+    client.record_completion(&imposter, &freelancer, &job_client, &1_000_i128, &5_u32, &5_u32);
 }

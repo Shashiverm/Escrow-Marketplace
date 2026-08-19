@@ -21,10 +21,10 @@ export function Header() {
       <div className="container header-inner">
         <div className="header-left">
           <Logo size="md" clickable={true} />
-          
+
           <div className="network-pill desktop-only">
-            <span className="network-dot pulse" />
-            <span>Testnet</span>
+            <span className="network-dot pulse-gold" />
+            <span>Soroban Testnet</span>
           </div>
         </div>
 
@@ -34,6 +34,12 @@ export function Header() {
             className={`nav-link ${isActive("/jobs") && !pathname.includes("/jobs/new") ? "active" : ""}`}
           >
             Browse Jobs
+          </Link>
+          <Link
+            href="/leaderboard"
+            className={`nav-link ${isActive("/leaderboard") ? "active" : ""}`}
+          >
+            🏆 Leaderboard
           </Link>
           <Link
             href="/jobs/new"
@@ -63,14 +69,21 @@ export function Header() {
 
       {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
-        <div className="mobile-menu-drawer">
-          <div className="container mobile-menu-content">
+        <div className="mobile-menu-drawer" style={{ background: "var(--bg-secondary)", padding: "16px", borderBottom: "1px solid var(--border-gold)" }}>
+          <div className="container mobile-menu-content" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <Link
               href="/jobs"
               className={`mobile-nav-link ${isActive("/jobs") && !pathname.includes("/jobs/new") ? "active" : ""}`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
               🔍 Browse Jobs
+            </Link>
+            <Link
+              href="/leaderboard"
+              className={`mobile-nav-link ${isActive("/leaderboard") ? "active" : ""}`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              🏆 Talent Leaderboard
             </Link>
             <Link
               href="/jobs/new"
@@ -86,7 +99,7 @@ export function Header() {
             >
               👤 My Profile
             </Link>
-            <div className="mobile-wallet-wrapper">
+            <div className="mobile-wallet-wrapper" style={{ marginTop: "8px" }}>
               <WalletConnect />
             </div>
           </div>

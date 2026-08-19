@@ -10,15 +10,19 @@ interface EventFeedProps {
 
 const EVENT_CONFIG: Record<
   MarketplaceEvent["type"],
-  { title: string; topic: string; emoji: string; className: string }
+  { title: string; topic: string; emoji: string }
 > = {
-  job_posted: { title: "Job Posted", topic: 'symbol("job_posted")', emoji: "📝", className: "funded" },
-  bid_placed: { title: "Bid Placed", topic: 'symbol("bid_placed")', emoji: "💬", className: "milestone" },
-  bid_accepted: { title: "Bid Accepted", topic: 'symbol("bid_accepted")', emoji: "🤝", className: "funded" },
-  escrow_funded: { title: "Escrow Funded", topic: 'symbol("escrow_funded")', emoji: "💰", className: "funded" },
-  milestone_approved: { title: "Milestone Approved", topic: 'symbol("milestone_approved")', emoji: "✅", className: "milestone" },
-  escrow_completed: { title: "Job Completed", topic: 'symbol("job_completed")', emoji: "🏆", className: "completed" },
-  escrow_refunded: { title: "Escrow Refunded", topic: 'symbol("escrow_refunded")', emoji: "🔄", className: "completed" },
+  job_posted: { title: "Job Posted", topic: 'symbol("job_posted")', emoji: "📝" },
+  bid_placed: { title: "Bid Placed", topic: 'symbol("bid_placed")', emoji: "💬" },
+  bid_withdrawn: { title: "Bid Withdrawn", topic: 'symbol("bid_withdrawn")', emoji: "↩️" },
+  bid_accepted: { title: "Bid Accepted", topic: 'symbol("bid_accepted")', emoji: "🤝" },
+  escrow_funded: { title: "Escrow Locked", topic: 'symbol("escrow_funded")', emoji: "💰" },
+  milestone_submitted: { title: "Work Proof Submitted", topic: 'symbol("milestone_submitted")', emoji: "📤" },
+  milestone_approved: { title: "Milestone Released", topic: 'symbol("milestone_approved")', emoji: "✅" },
+  dispute_raised: { title: "Dispute Raised", topic: 'symbol("dispute_raised")', emoji: "⚖️" },
+  dispute_resolved: { title: "Dispute Settled", topic: 'symbol("dispute_resolved")', emoji: "🏛️" },
+  escrow_completed: { title: "Contract Finalized", topic: 'symbol("escrow_completed")', emoji: "🏆" },
+  escrow_refunded: { title: "Escrow Refunded", topic: 'symbol("escrow_refunded")', emoji: "🔄" },
 };
 
 export function EventFeed({ jobId }: EventFeedProps) {
@@ -44,17 +48,17 @@ export function EventFeed({ jobId }: EventFeedProps) {
   }
 
   return (
-    <div className="card hover-glow" id="event-feed">
-      <div className="detail-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span>Soroban On-Chain Events</span>
-        </div>
+    <div className="card" id="event-feed">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>
+          ⚡ Live <span className="gradient-gold-text">Soroban RPC Events</span>
+        </h3>
         <span className="network-pill" style={{ fontSize: "0.72rem" }}>
-          ⚡ Testnet RPC Live
+          Sub-5s Finality
         </span>
       </div>
 
-      <div className="event-feed">
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         {events.length === 0 && (
           <p
             style={{
@@ -72,34 +76,59 @@ export function EventFeed({ jobId }: EventFeedProps) {
             title: "Contract Event",
             topic: 'symbol("event")',
             emoji: "⚡",
-            className: "milestone",
           };
-          
+
           const simulatedLedgerSeq = 4829100 + (events.length - idx);
 
           return (
-            <div key={event.id} className="event-item" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: "12px", marginBottom: "10px" }}>
-              <div className={`event-icon ${config.className}`}>
+            <div
+              key={event.id}
+              style={{
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)",
+                padding: "12px 14px",
+                display: "flex",
+                gap: "12px",
+                alignItems: "flex-start",
+              }}
+            >
+              <div
+                style={{
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "50%",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-gold)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1rem",
+                }}
+              >
                 {config.emoji}
               </div>
-              <div className="event-content" style={{ flex: 1 }}>
-                <div className="event-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.9rem" }}>{config.title}</span>
+
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 800, color: "var(--text-primary)", fontSize: "0.88rem" }}>
+                    {config.title}
+                  </span>
                   <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                    Ledger #{simulatedLedgerSeq} &middot; {timeAgo(event.timestamp)}
+                    Ledger #{simulatedLedgerSeq} · {timeAgo(event.timestamp)}
                   </span>
                 </div>
 
-                <div style={{ fontSize: "0.76rem", color: "var(--purple-light)", fontFamily: "var(--font-mono)", margin: "2px 0" }}>
-                  Topic: <code>{config.topic}</code>
+                <div style={{ fontSize: "0.75rem", color: "var(--violet-light)", fontFamily: "var(--font-mono)", margin: "2px 0" }}>
+                  Topic: <code>{config.topic}</code> {event.meta && `· ${event.meta}`}
                 </div>
 
-                <div className="event-time" style={{ fontSize: "0.82rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
                   <span>
-                    Actor: <strong style={{ color: "var(--cyan-light)", fontFamily: "var(--font-mono)" }}>{truncateAddress(event.actor, 5)}</strong>
+                    Actor: <strong style={{ color: "var(--gold-light)", fontFamily: "var(--font-mono)" }}>{truncateAddress(event.actor, 5)}</strong>
                   </span>
                   {event.amount && (
-                    <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                    <span style={{ fontWeight: 800, color: "var(--emerald-light)", fontFamily: "var(--font-mono)" }}>
                       {event.amount.toLocaleString()} XLM
                     </span>
                   )}
@@ -112,12 +141,9 @@ export function EventFeed({ jobId }: EventFeedProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        fontSize: "0.74rem",
-                        color: "var(--cyan-light)",
+                        fontSize: "0.72rem",
+                        color: "var(--gold)",
                         fontFamily: "var(--font-mono)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "2px",
                       }}
                     >
                       TX: {truncateAddress(event.txHash, 6)} ↗

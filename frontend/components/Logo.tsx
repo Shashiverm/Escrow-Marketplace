@@ -46,7 +46,7 @@ export function Logo({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          filter: "drop-shadow(0 0 12px rgba(124, 58, 237, 0.45))",
+          filter: "drop-shadow(0 0 14px rgba(245, 158, 11, 0.45))",
           transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
@@ -58,7 +58,7 @@ export function Logo({
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            {/* Main vibrant gradient */}
+            {/* Solar Gold & Emerald & Violet Gradient */}
             <linearGradient
               id="stellar-escrow-grad"
               x1="0%"
@@ -66,23 +66,21 @@ export function Logo({
               x2="100%"
               y2="100%"
             >
-              <stop offset="0%" stopColor="#8b5cf6" />
-              <stop offset="50%" stopColor="#06b6d4" />
-              <stop offset="100%" stopColor="#3b82f6" />
+              <stop offset="0%" stopColor="#f59e0b" />
+              <stop offset="50%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#10b981" />
             </linearGradient>
 
-            {/* Glowing inner fill */}
             <radialGradient
               id="stellar-core-glow"
               cx="50%"
               cy="50%"
               r="50%"
             >
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.2" />
             </radialGradient>
 
-            {/* Subtle glass overlay stroke */}
             <linearGradient
               id="stellar-stroke-grad"
               x1="0%"
@@ -90,16 +88,16 @@ export function Logo({
               x2="100%"
               y2="100%"
             >
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.2" />
             </linearGradient>
           </defs>
 
-          {/* Outer Shield & Node Frame */}
+          {/* Outer Shield & Frame */}
           <path
             d="M50 8 L85 24 V50 C85 71.5 70 88 50 94 C30 88 15 71.5 15 50 V24 L50 8 Z"
             fill="url(#stellar-escrow-grad)"
-            fillOpacity="0.2"
+            fillOpacity="0.18"
             stroke="url(#stellar-escrow-grad)"
             strokeWidth="4"
             strokeLinejoin="round"
@@ -123,12 +121,12 @@ export function Logo({
 
           {/* Core Sparkle */}
           <circle cx="50" cy="50" r="5" fill="#ffffff" />
-          
+
           {/* Orbital Escrow Nodes */}
-          <circle cx="50" cy="18" r="3.5" fill="#06b6d4" />
-          <circle cx="82" cy="50" r="3.5" fill="#a78bfa" />
-          <circle cx="50" cy="82" r="3.5" fill="#06b6d4" />
-          <circle cx="18" cy="50" r="3.5" fill="#a78bfa" />
+          <circle cx="50" cy="18" r="3.5" fill="#fbbf24" />
+          <circle cx="82" cy="50" r="3.5" fill="#10b981" />
+          <circle cx="50" cy="82" r="3.5" fill="#a855f7" />
+          <circle cx="18" cy="50" r="3.5" fill="#fbbf24" />
         </svg>
       </div>
 
@@ -147,11 +145,11 @@ export function Logo({
           <span
             style={{
               background: textGradient
-                ? "linear-gradient(135deg, #a78bfa 0%, #22d3ee 100%)"
+                ? "linear-gradient(135deg, #fbbf24 0%, #a855f7 100%)"
                 : "none",
               WebkitBackgroundClip: textGradient ? "text" : "unset",
               WebkitTextFillColor: textGradient ? "transparent" : "inherit",
-              marginLeft: "1px",
+              marginLeft: "3px",
             }}
           >
             Escrow

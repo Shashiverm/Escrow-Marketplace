@@ -44,43 +44,87 @@ AAAAB3Nvcm9iYW4AAAAMaW5pdGlhbGl6ZQAAAAAAAAAAAA==`;
   }
 
   return (
-    <div className="wallet-modal-overlay" onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose}>
       <div
-        className="wallet-modal-card"
-        style={{ maxWidth: "680px" }}
+        className="modal-box"
+        style={{ maxWidth: "700px" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="wallet-modal-close" onClick={onClose}>
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: "18px",
+            right: "18px",
+            background: "none",
+            border: "none",
+            color: "var(--text-muted)",
+            fontSize: "1.2rem",
+            cursor: "pointer",
+          }}
+        >
           ✕
         </button>
 
-        <div className="wallet-modal-header">
-          <span className="category-tag">Soroban Smart Contract Inspector</span>
-          <h2 className="wallet-modal-title" style={{ marginTop: "6px" }}>
+        <div style={{ marginBottom: "20px" }}>
+          <span className="category-pill" style={{ marginBottom: "8px" }}>
+            Soroban Smart Contract Inspector
+          </span>
+          <h2 style={{ fontSize: "1.6rem", marginTop: "6px" }}>
             Contract #{jobId} Diagnostic State
           </h2>
-          <p className="wallet-modal-desc">
-            On-chain ledger parameters, WASM hash, and Soroban storage footprints.
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
+            On-chain ledger footprints, WASM code hash, and contract data storage.
           </p>
         </div>
 
         {/* Tab Selector */}
-        <div className="filter-tabs" style={{ marginBottom: "20px" }}>
+        <div style={{ display: "flex", gap: "8px", marginBottom: "20px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
           <button
-            className={`filter-tab ${activeInspectorTab === "overview" ? "active" : ""}`}
             onClick={() => setActiveInspectorTab("overview")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "var(--radius-full)",
+              fontSize: "0.85rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              border: "1px solid",
+              borderColor: activeInspectorTab === "overview" ? "var(--gold)" : "transparent",
+              background: activeInspectorTab === "overview" ? "var(--gold-subtle)" : "transparent",
+              color: activeInspectorTab === "overview" ? "var(--gold-light)" : "var(--text-secondary)",
+            }}
           >
             Protocol Overview
           </button>
           <button
-            className={`filter-tab ${activeInspectorTab === "storage" ? "active" : ""}`}
             onClick={() => setActiveInspectorTab("storage")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "var(--radius-full)",
+              fontSize: "0.85rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              border: "1px solid",
+              borderColor: activeInspectorTab === "storage" ? "var(--gold)" : "transparent",
+              background: activeInspectorTab === "storage" ? "var(--gold-subtle)" : "transparent",
+              color: activeInspectorTab === "storage" ? "var(--gold-light)" : "var(--text-secondary)",
+            }}
           >
-            Ledger Storage Footprint
+            Ledger Footprint
           </button>
           <button
-            className={`filter-tab ${activeInspectorTab === "xdr" ? "active" : ""}`}
             onClick={() => setActiveInspectorTab("xdr")}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "var(--radius-full)",
+              fontSize: "0.85rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              border: "1px solid",
+              borderColor: activeInspectorTab === "xdr" ? "var(--gold)" : "transparent",
+              background: activeInspectorTab === "xdr" ? "var(--gold-subtle)" : "transparent",
+              color: activeInspectorTab === "xdr" ? "var(--gold-light)" : "var(--text-secondary)",
+            }}
           >
             Raw XDR Payload
           </button>
@@ -88,42 +132,60 @@ AAAAB3Nvcm9iYW4AAAAMaW5pdGlhbGl6ZQAAAAAAAAAAAA==`;
 
         {activeInspectorTab === "overview" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div className="inspector-field">
-              <span className="inspector-label">Soroban Contract ID</span>
-              <div className="inspector-value font-mono">
-                <code>{contractId}</code>
+            <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                Soroban Contract ID
+              </span>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem", color: "var(--gold-light)", wordBreak: "break-all" }}>
+                {contractId}
               </div>
             </div>
 
-            <div className="inspector-field">
-              <span className="inspector-label">WASM Code Hash</span>
-              <div className="inspector-value font-mono">
-                <code>{simulatedWasmHash}</code>
+            <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                WASM Code Hash
+              </span>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem", color: "var(--violet-light)", wordBreak: "break-all" }}>
+                {simulatedWasmHash}
               </div>
             </div>
 
-            <div className="grid-2" style={{ gap: "12px" }}>
-              <div className="inspector-field">
-                <span className="inspector-label">Contract Status</span>
-                <span className="badge badge-open" style={{ textTransform: "uppercase" }}>
-                  {status}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                  Contract Status
                 </span>
+                <div style={{ fontWeight: 800, color: "var(--emerald-light)", textTransform: "uppercase" }}>
+                  {status}
+                </div>
               </div>
-              <div className="inspector-field">
-                <span className="inspector-label">Total Escrow Budget</span>
-                <strong style={{ color: "var(--cyan-light)" }}>{budget.toLocaleString()} XLM</strong>
+              <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                  Total Escrow Budget
+                </span>
+                <div style={{ fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--gold-light)" }}>
+                  {budget.toLocaleString()} XLM
+                </div>
               </div>
             </div>
 
-            <div className="inspector-field">
-              <span className="inspector-label">Client Address (Job Creator)</span>
-              <div className="inspector-value font-mono">{client}</div>
+            <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                Client Address (Job Creator)
+              </span>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem", wordBreak: "break-all" }}>
+                {client}
+              </div>
             </div>
 
             {freelancer && (
-              <div className="inspector-field">
-                <span className="inspector-label">Freelancer Address (Assigned)</span>
-                <div className="inspector-value font-mono">{freelancer}</div>
+              <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                  Freelancer Address (Assigned)
+                </span>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.85rem", wordBreak: "break-all" }}>
+                  {freelancer}
+                </div>
               </div>
             )}
           </div>
@@ -131,28 +193,30 @@ AAAAB3Nvcm9iYW4AAAAMaW5pdGlhbGl6ZQAAAAAAAAAAAA==`;
 
         {activeInspectorTab === "storage" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div className="inspector-field">
-              <span className="inspector-label">Ledger Sequence Number</span>
-              <span className="font-mono">Ledger #{simulatedLedgerSeq}</span>
-            </div>
-
-            <div className="inspector-field">
-              <span className="inspector-label">Storage Entry Type</span>
-              <code>ContractData (Persistent Storage)</code>
-            </div>
-
-            <div className="inspector-field">
-              <span className="inspector-label">TTL (Time to Live) Expiration</span>
-              <span className="font-mono" style={{ color: "var(--success)" }}>
-                500,000 Ledgers Remaining (~35 days)
+            <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                Ledger Sequence Number
               </span>
+              <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                Ledger #{simulatedLedgerSeq}
+              </div>
             </div>
 
-            <div className="inspector-field">
-              <span className="inspector-label">Authorized Soroban Signers</span>
-              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                1. Client Key (Deposit & Approval Authorization)<br />
-                2. Contract Address (Escrow Lock Hold)
+            <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                Storage Entry Type
+              </span>
+              <div style={{ fontFamily: "var(--font-mono)", color: "var(--gold-light)" }}>
+                ContractData (Persistent Storage)
+              </div>
+            </div>
+
+            <div style={{ background: "var(--bg-tertiary)", padding: "12px", borderRadius: "var(--radius-md)" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                TTL (Time to Live) Expiration
+              </span>
+              <div style={{ fontFamily: "var(--font-mono)", color: "var(--emerald-light)" }}>
+                500,000 Ledgers Remaining (~35 days)
               </div>
             </div>
           </div>
@@ -161,20 +225,20 @@ AAAAB3Nvcm9iYW4AAAAMaW5pdGlhbGl6ZQAAAAAAAAAAAA==`;
         {activeInspectorTab === "xdr" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <span className="inspector-label">Base64 Transaction Envelope XDR</span>
-              <button className="btn btn-secondary btn-sm" onClick={handleCopyXdr}>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Base64 Envelope XDR</span>
+              <button className="btn btn-secondary" style={{ padding: "4px 12px", fontSize: "0.75rem" }} onClick={handleCopyXdr}>
                 {copiedXdr ? "✓ Copied XDR" : "📋 Copy XDR"}
               </button>
             </div>
             <pre
               style={{
-                background: "rgba(0, 0, 0, 0.5)",
+                background: "rgba(0, 0, 0, 0.6)",
                 padding: "14px",
                 borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border-light)",
+                border: "1px solid var(--border)",
                 fontSize: "0.78rem",
                 fontFamily: "var(--font-mono)",
-                color: "var(--cyan-light)",
+                color: "var(--gold-light)",
                 overflowX: "auto",
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-all",
@@ -185,16 +249,17 @@ AAAAB3Nvcm9iYW4AAAAMaW5pdGlhbGl6ZQAAAAAAAAAAAA==`;
           </div>
         )}
 
-        <div className="wallet-modal-footer" style={{ marginTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ marginTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <a
             href="https://stellar.expert/explorer/testnet"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary"
+            style={{ fontSize: "0.82rem" }}
           >
-            🌐 Open on StellarExpert Explorer ↗
+            🌐 Open on StellarExpert &rarr;
           </a>
-          <button className="btn btn-primary btn-sm" onClick={onClose}>
+          <button className="btn btn-primary" style={{ fontSize: "0.82rem" }} onClick={onClose}>
             Close Inspector
           </button>
         </div>

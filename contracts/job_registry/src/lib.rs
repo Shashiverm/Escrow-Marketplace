@@ -1,13 +1,15 @@
 //! # Job Registry Contract
 //!
 //! Manages the lifecycle of freelance jobs on the Stellar Freelance Escrow Marketplace.
-//! Handles job posting, bidding, bid acceptance, and status tracking.
+//! Handles job posting with categories & deadlines, scalable bidding, bid withdrawal,
+//! bid acceptance, and status tracking.
 //!
 //! ## Events Emitted
-//! - `job_posted`    — when a new job is created
-//! - `bid_placed`    — when a freelancer submits a bid
-//! - `bid_accepted`  — when the client accepts a bid
-//! - `status_updated`— when the job status changes (via escrow contract)
+//! - `job_posted`     — when a new job is created
+//! - `bid_placed`     — when a freelancer submits a bid
+//! - `bid_withdrawn`  — when a freelancer withdraws their bid
+//! - `bid_accepted`   — when the client accepts a bid
+//! - `status_updated` — when the job status changes (via escrow contract)
 
 #![no_std]
 
@@ -24,13 +26,14 @@ mod test;
 
 /// Possible states of a job listing.
 #[contracttype]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum JobStatus {
     Open = 0,
     InProgress = 1,
     Completed = 2,
     Cancelled = 3,
+    Disputed = 4,
 }
 
 /// A freelancer's bid on a job.
@@ -40,6 +43,8 @@ pub struct Bid {
     pub freelancer: Address,
     pub amount: i128,
     pub proposal: String,
+    pub estimated_days: u32,
+    pub is_active: bool,
 }
 
 /// A job listing with metadata, status, and assigned freelancer.
@@ -50,11 +55,13 @@ pub struct Job {
     pub client: Address,
     pub title: String,
     pub description: String,
+    pub category: String,
     pub budget: i128,
     pub milestone_count: u32,
     pub status: JobStatus,
     pub freelancer: Address,
     pub bid_count: u32,
+    pub deadline: u64,
 }
 
 /// Storage keys for the Job Registry contract.
@@ -80,7 +87,7 @@ pub struct JobRegistryContract;
 impl JobRegistryContract {
     // ── Job Posting ──────────────────────────
 
-    /// Create a new job listing.
+    /// Create a new job listing with category and deadline.
     ///
     /// Returns the newly assigned `job_id`.
     /// The caller (`client`) must authorize the transaction.
@@ -89,8 +96,10 @@ impl JobRegistryContract {
         client: Address,
         title: String,
         description: String,
+        category: String,
         budget: i128,
         milestone_count: u32,
+        deadline: u64,
     ) -> u64 {
         client.require_auth();
 
@@ -110,13 +119,15 @@ impl JobRegistryContract {
         let job = Job {
             id: job_id,
             client: client.clone(),
-            title: title.clone(),
+            title,
             description,
+            category,
             budget,
             milestone_count,
             status: JobStatus::Open,
             freelancer: client.clone(), // placeholder until bid accepted
             bid_count: 0,
+            deadline,
         };
 
         env.storage().persistent().set(&DataKey::Job(job_id), &job);
@@ -144,6 +155,7 @@ impl JobRegistryContract {
         job_id: u64,
         amount: i128,
         proposal: String,
+        estimated_days: u32,
     ) -> u32 {
         freelancer.require_auth();
 
@@ -161,6 +173,8 @@ impl JobRegistryContract {
             freelancer: freelancer.clone(),
             amount,
             proposal,
+            estimated_days,
+            is_active: true,
         };
 
         let mut bids: Vec<Bid> = env
@@ -186,6 +200,39 @@ impl JobRegistryContract {
         bid_index
     }
 
+    /// Withdraw an active bid before it is accepted.
+    pub fn withdraw_bid(env: Env, freelancer: Address, job_id: u64, bid_index: u32) {
+        freelancer.require_auth();
+
+        let job: Job = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Job(job_id))
+            .expect("Job not found");
+        assert!(job.status == JobStatus::Open, "Job is not open");
+
+        let mut bids: Vec<Bid> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bids(job_id))
+            .expect("No bids found");
+
+        let mut bid = bids.get(bid_index).expect("Invalid bid index");
+        assert!(bid.freelancer == freelancer, "Not your bid");
+        assert!(bid.is_active, "Bid already withdrawn");
+
+        bid.is_active = false;
+        bids.set(bid_index, bid);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Bids(job_id), &bids);
+
+        env.events().publish(
+            (Symbol::new(&env, "bid_withdrawn"), freelancer),
+            (job_id, bid_index),
+        );
+    }
+
     /// Accept a bid. Only the job's client may call this.
     ///
     /// Sets the job status to `InProgress` and records the winning freelancer.
@@ -208,6 +255,7 @@ impl JobRegistryContract {
             .expect("No bids found");
 
         let accepted_bid = bids.get(bid_index).expect("Invalid bid index");
+        assert!(accepted_bid.is_active, "Cannot accept withdrawn bid");
 
         job.status = JobStatus::InProgress;
         job.freelancer = accepted_bid.freelancer.clone();
@@ -223,7 +271,7 @@ impl JobRegistryContract {
 
     /// Update job status. Intended for cross-contract calls from the Escrow contract.
     ///
-    /// Status codes: 0 = Open, 1 = InProgress, 2 = Completed, 3 = Cancelled
+    /// Status codes: 0 = Open, 1 = InProgress, 2 = Completed, 3 = Cancelled, 4 = Disputed
     pub fn update_status(env: Env, caller: Address, job_id: u64, new_status: u32) {
         caller.require_auth();
 
@@ -237,6 +285,7 @@ impl JobRegistryContract {
             1 => JobStatus::InProgress,
             2 => JobStatus::Completed,
             3 => JobStatus::Cancelled,
+            4 => JobStatus::Disputed,
             _ => panic!("Invalid status code"),
         };
 
@@ -298,5 +347,42 @@ impl JobRegistryContract {
             i += 1;
         }
         jobs
+    }
+
+    /// List jobs filtered by status.
+    pub fn list_jobs_by_status(env: Env, status: u32, start: u64, limit: u64) -> Vec<Job> {
+        let count: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::JobCount)
+            .unwrap_or(0);
+
+        let target_status = match status {
+            0 => JobStatus::Open,
+            1 => JobStatus::InProgress,
+            2 => JobStatus::Completed,
+            3 => JobStatus::Cancelled,
+            4 => JobStatus::Disputed,
+            _ => return Vec::new(&env),
+        };
+
+        let mut matched = Vec::new(&env);
+        let mut skipped: u64 = 0;
+        let mut i: u64 = 0;
+
+        while i < count && (matched.len() as u64) < limit {
+            if let Some(job) = env.storage().persistent().get::<DataKey, Job>(&DataKey::Job(i)) {
+                if job.status == target_status {
+                    if skipped >= start {
+                        matched.push_back(job);
+                    } else {
+                        skipped += 1;
+                    }
+                }
+            }
+            i += 1;
+        }
+
+        matched
     }
 }

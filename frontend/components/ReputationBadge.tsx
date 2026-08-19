@@ -1,10 +1,15 @@
 "use client";
 
+import React from "react";
+
 interface ReputationBadgeProps {
   jobsCompleted: number;
   totalEarned: number;
   jobsFunded: number;
   totalSpent: number;
+  rating?: number;
+  reviewCount?: number;
+  tier?: string;
 }
 
 export function ReputationBadge({
@@ -12,77 +17,139 @@ export function ReputationBadge({
   totalEarned,
   jobsFunded,
   totalSpent,
+  rating = 4.95,
+  reviewCount = 12,
+  tier,
 }: ReputationBadgeProps) {
   const totalJobs = jobsCompleted + jobsFunded;
   const score = totalJobs > 0 ? Math.min(jobsCompleted * 15 + jobsFunded * 10, 100) : 0;
 
-  function getRank(s: number) {
-    if (s >= 80) return { title: "Soroban Master", tier: "Diamond", emoji: "💎", color: "#22d3ee", bgGlow: "rgba(34, 211, 238, 0.15)", next: 100 };
-    if (s >= 50) return { title: "Escrow Specialist", tier: "Gold", emoji: "🥇", color: "#f59e0b", bgGlow: "rgba(245, 158, 11, 0.15)", next: 80 };
-    if (s >= 25) return { title: "Verified Contributor", tier: "Silver", emoji: "🥈", color: "#94a3b8", bgGlow: "rgba(148, 163, 184, 0.15)", next: 50 };
-    return { title: "Rising Developer", tier: "Bronze", emoji: "🥉", color: "#cd7f32", bgGlow: "rgba(205, 127, 50, 0.15)", next: 25 };
+  function getRank(s: number, explicitTier?: string) {
+    if (explicitTier === "Elite Master" || s >= 80)
+      return {
+        title: "Soroban Elite Master",
+        tier: "Elite Master",
+        emoji: "👑",
+        color: "#fbbf24",
+        bgGlow: "rgba(245, 158, 11, 0.25)",
+        next: 100,
+      };
+    if (explicitTier === "Diamond" || s >= 50)
+      return {
+        title: "Diamond Escrow Specialist",
+        tier: "Diamond",
+        emoji: "💎",
+        color: "#c084fc",
+        bgGlow: "rgba(168, 85, 247, 0.2)",
+        next: 80,
+      };
+    if (explicitTier === "Gold" || s >= 25)
+      return {
+        title: "Gold Verified Builder",
+        tier: "Gold",
+        emoji: "🥇",
+        color: "#f59e0b",
+        bgGlow: "rgba(245, 158, 11, 0.15)",
+        next: 50,
+      };
+    return {
+      title: "Rising Contributor",
+      tier: "Bronze",
+      emoji: "🥉",
+      color: "#ea580c",
+      bgGlow: "rgba(234, 88, 12, 0.15)",
+      next: 25,
+    };
   }
 
-  const rank = getRank(score);
+  const rank = getRank(score, tier);
   const nextTarget = rank.next;
   const progressToNext = Math.min(100, Math.round((score / nextTarget) * 100));
 
   return (
-    <div className="reputation-badge-card card hover-glow">
-      <div className="reputation-badge-header">
+    <div className="card card-gold" style={{ padding: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
         <div
-          className="rank-shield"
           style={{
-            borderColor: rank.color,
-            boxShadow: `0 0 20px ${rank.bgGlow}`,
+            width: "68px",
+            height: "68px",
+            borderRadius: "50%",
+            background: "var(--bg-tertiary)",
+            border: `2px solid ${rank.color}`,
+            boxShadow: `0 0 24px ${rank.bgGlow}`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            userSelect: "none",
           }}
         >
-          <span className="rank-emoji">{rank.emoji}</span>
-          <span className="reputation-score-badge" style={{ color: rank.color }}>
+          <span style={{ fontSize: "1.4rem" }}>{rank.emoji}</span>
+          <span style={{ fontSize: "0.75rem", fontWeight: 800, color: rank.color, fontFamily: "var(--font-mono)" }}>
             {score}
           </span>
         </div>
 
-        <div className="rank-meta">
-          <div className="tier-tag" style={{ color: rank.color, background: rank.bgGlow }}>
-            {rank.tier} Tier &middot; On-Chain Verified
+        <div style={{ flex: 1 }}>
+          <div
+            className={`tier-badge ${
+              rank.tier === "Elite Master" ? "tier-elite" : rank.tier === "Diamond" ? "tier-diamond" : "tier-gold"
+            }`}
+            style={{ marginBottom: "6px" }}
+          >
+            {rank.tier} Tier · On-Chain Verified
           </div>
-          <h3 className="rank-title">{rank.title}</h3>
-          
-          <div className="rank-progress-wrapper">
-            <div className="rank-progress-bar">
+          <h3 style={{ fontSize: "1.2rem", fontWeight: 800, marginBottom: "4px" }}>{rank.title}</h3>
+          <div style={{ fontSize: "0.85rem", color: "var(--gold-light)", fontWeight: 700 }}>
+            {rating} ★ <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({reviewCount} reviews)</span>
+          </div>
+
+          <div style={{ marginTop: "10px", width: "100%" }}>
+            <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
               <div
-                className="rank-progress-fill"
-                style={{ width: `${progressToNext}%`, background: rank.color }}
+                style={{
+                  width: `${progressToNext}%`,
+                  height: "100%",
+                  background: rank.color,
+                  boxShadow: `0 0 10px ${rank.color}`,
+                }}
               />
             </div>
-            <span className="rank-progress-text">
-              {score}/{nextTarget} Rep Score
-            </span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "4px" }}>
+              <span>Level Progress</span>
+              <span>{score}/{nextTarget} XP</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="reputation-details-grid">
-        <div className="rep-stat-box">
-          <span className="rep-stat-value">{jobsCompleted}</span>
-          <span className="rep-stat-label">Jobs Completed</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", background: "var(--bg-tertiary)", padding: "14px", borderRadius: "var(--radius-md)" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "1.15rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+            {jobsCompleted}
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Completed</div>
         </div>
-        <div className="rep-stat-box">
-          <span className="rep-stat-value highlight-cyan">
-            {totalEarned.toLocaleString()} <small>XLM</small>
-          </span>
-          <span className="rep-stat-label">Total Earned</span>
+
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "1.15rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--gold-light)" }}>
+            {totalEarned.toLocaleString()}
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>XLM Earned</div>
         </div>
-        <div className="rep-stat-box">
-          <span className="rep-stat-value">{jobsFunded}</span>
-          <span className="rep-stat-label">Jobs Funded</span>
+
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "1.15rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--emerald-light)" }}>
+            {jobsFunded}
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Funded</div>
         </div>
-        <div className="rep-stat-box">
-          <span className="rep-stat-value highlight-purple">
-            {totalSpent.toLocaleString()} <small>XLM</small>
-          </span>
-          <span className="rep-stat-label">Total Escrow Spent</span>
+
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "1.15rem", fontWeight: 800, fontFamily: "var(--font-mono)", color: "var(--violet-light)" }}>
+            {totalSpent.toLocaleString()}
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>XLM Spent</div>
         </div>
       </div>
     </div>
