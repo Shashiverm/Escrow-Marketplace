@@ -46,7 +46,7 @@ export function MilestoneTracker({
   const handleDisputeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (disputingIndex !== null && onRaiseDispute) {
-      onRaiseDispute(disputingIndex, disputeReason || "Milestone deliverables not meeting specifications.");
+      onRaiseDispute(disputingIndex, disputeReason || "Deliverables require revision or do not match scope.");
       setDisputingIndex(null);
       setDisputeReason("");
     }
@@ -54,18 +54,18 @@ export function MilestoneTracker({
 
   return (
     <div className="milestone-tracker-card">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
         <div>
-          <h3 style={{ fontSize: "1.3rem", fontWeight: 800 }}>
-            🔒 Escrow <span className="gradient-gold-text">Milestone Schedule</span>
+          <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>
+            Escrow <span className="gradient-gold-text">Milestone Schedule</span>
           </h3>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>
-            Locked in Soroban Smart Contract with automated release upon verification.
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            Locked in Soroban smart contract with autonomous release upon client sign-off.
           </p>
         </div>
         <div className="network-pill">
           <span className="network-dot pulse-gold" />
-          <span>Multi-Milestone Escrow</span>
+          <span>Non-Custodial</span>
         </div>
       </div>
 
@@ -76,22 +76,22 @@ export function MilestoneTracker({
               <div className="milestone-index">{i + 1}</div>
               <div className="milestone-info">
                 <h4>{m.title || `Milestone ${i + 1}`}</h4>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "4px", fontSize: "0.82rem" }}>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", marginTop: "3px", fontSize: "0.8rem" }}>
                   <span className="milestone-amount">{m.amount.toLocaleString()} XLM</span>
                   
                   {m.state === "approved" && (
                     <span style={{ color: "var(--emerald-light)", fontWeight: 700 }}>
-                      ✓ Released & Settled
+                      ✓ Released &amp; Settled
                     </span>
                   )}
                   {m.state === "submitted" && (
                     <span style={{ color: "var(--gold-light)", fontWeight: 700 }}>
-                      ⏳ Work Submitted for Review
+                      Pending Client Review
                     </span>
                   )}
                   {m.state === "disputed" && (
                     <span style={{ color: "var(--dispute)", fontWeight: 700 }}>
-                      ⚠️ In Arbitration Dispute
+                      In Arbitration Dispute
                     </span>
                   )}
                   {m.state === "pending" && (
@@ -101,48 +101,45 @@ export function MilestoneTracker({
                   )}
 
                   {m.deliverableHash && (
-                    <span style={{ color: "var(--violet-light)", fontFamily: "var(--font-mono)" }}>
-                      Hash: {m.deliverableHash.slice(0, 16)}...
+                    <span style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}>
+                      Hash: {m.deliverableHash.slice(0, 18)}...
                     </span>
                   )}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
               {/* Freelancer Submit Action */}
               {isFreelancer && (m.state === "pending" || m.state === "submitted") && (
                 <button
-                  className="btn btn-outline-gold"
-                  style={{ padding: "6px 14px", fontSize: "0.82rem" }}
+                  className="btn btn-outline-gold btn-sm"
                   onClick={() => {
                     setSubmittingIndex(i);
                     setDeliverableHash(m.deliverableHash || "");
                   }}
                 >
-                  📤 Submit Deliverable
+                  Submit Proof
                 </button>
               )}
 
               {/* Client Approve Action */}
               {isClient && (m.state === "pending" || m.state === "submitted") && (
                 <button
-                  className="btn btn-emerald"
-                  style={{ padding: "6px 16px", fontSize: "0.82rem" }}
+                  className="btn btn-emerald btn-sm"
                   onClick={() => setApprovingIndex(i)}
                 >
-                  ✓ Approve & Release
+                  Approve &amp; Release
                 </button>
               )}
 
               {/* Dispute Button */}
               {(isClient || isFreelancer) && (m.state === "pending" || m.state === "submitted") && (
                 <button
-                  className="btn btn-dispute"
-                  style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                  className="btn btn-dispute btn-sm"
                   onClick={() => setDisputingIndex(i)}
                 >
-                  ⚖️ Dispute
+                  Dispute
                 </button>
               )}
             </div>
@@ -152,18 +149,18 @@ export function MilestoneTracker({
 
       {/* Work Submission Modal */}
       {submittingIndex !== null && (
-        <div className="modal-backdrop">
-          <div className="modal-box">
-            <h3 style={{ fontSize: "1.4rem", marginBottom: "8px" }}>
-              Submit Deliverable for <span className="gradient-gold-text">Milestone {submittingIndex + 1}</span>
+        <div className="modal-backdrop" onClick={() => setSubmittingIndex(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: "1.3rem", marginBottom: "6px" }}>
+              Submit Milestone {submittingIndex + 1} Deliverable
             </h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "20px" }}>
-              Provide the verifiable link, IPFS hash, GitHub PR, or artifact summary for the client to review.
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "18px" }}>
+              Provide the verifiable link, IPFS content hash, or repository commit for client verification.
             </p>
 
             <form onSubmit={handleWorkSubmit}>
               <div className="form-group">
-                <label className="form-label">Deliverable URL / IPFS Hash / GitHub PR</label>
+                <label className="form-label">Deliverable URL / IPFS Hash / PR Link</label>
                 <input
                   type="text"
                   className="form-input"
@@ -174,12 +171,12 @@ export function MilestoneTracker({
                 />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setSubmittingIndex(null)}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSubmittingIndex(null)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  🚀 Submit for Client Approval
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Submit for Approval
                 </button>
               </div>
             </form>
@@ -189,39 +186,47 @@ export function MilestoneTracker({
 
       {/* Client Approval & Rating Modal */}
       {approvingIndex !== null && (
-        <div className="modal-backdrop">
-          <div className="modal-box">
-            <h3 style={{ fontSize: "1.4rem", marginBottom: "8px" }}>
-              Approve & Release <span className="gradient-emerald-text">Milestone {approvingIndex + 1}</span>
+        <div className="modal-backdrop" onClick={() => setApprovingIndex(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: "1.3rem", marginBottom: "6px" }}>
+              Approve &amp; Release <span className="gradient-emerald-text">Milestone {approvingIndex + 1}</span>
             </h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "20px" }}>
-              Tokens ({milestones[approvingIndex].amount.toLocaleString()} XLM) will transfer immediately from the Soroban Escrow contract to the freelancer.
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "18px" }}>
+              {milestones[approvingIndex].amount.toLocaleString()} XLM will transfer autonomously from the Soroban escrow contract to the developer.
             </p>
 
             <div className="form-group">
-              <label className="form-label">Rate Freelancer Performance</label>
-              <div style={{ display: "flex", gap: "12px", fontSize: "1.8rem", cursor: "pointer", margin: "8px 0" }}>
+              <label className="form-label">Rate Quality &amp; Communication (1 to 5 Stars)</label>
+              <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <span
+                  <button
                     key={star}
+                    type="button"
                     onClick={() => setStarRating(star)}
-                    style={{ color: star <= starRating ? "#fbbf24" : "rgba(255,255,255,0.2)", transition: "all 0.2s" }}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid",
+                      borderColor: starRating >= star ? "var(--gold)" : "var(--border)",
+                      background: starRating >= star ? "var(--gold-subtle)" : "var(--bg-tertiary)",
+                      color: starRating >= star ? "var(--gold-light)" : "var(--text-muted)",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      fontSize: "1rem",
+                    }}
                   >
-                    ★
-                  </span>
+                    ★ {star}
+                  </button>
                 ))}
-                <span style={{ fontSize: "1rem", alignSelf: "center", color: "var(--gold-light)", fontWeight: 700 }}>
-                  {starRating}.0 Stars
-                </span>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setApprovingIndex(null)}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setApprovingIndex(null)}>
                 Cancel
               </button>
-              <button type="button" className="btn btn-emerald" onClick={handleApproveConfirm}>
-                💰 Sign & Release {milestones[approvingIndex].amount.toLocaleString()} XLM
+              <button type="button" className="btn btn-emerald btn-sm" onClick={handleApproveConfirm}>
+                Confirm Release &rarr;
               </button>
             </div>
           </div>
@@ -230,13 +235,13 @@ export function MilestoneTracker({
 
       {/* Dispute Modal */}
       {disputingIndex !== null && (
-        <div className="modal-backdrop">
-          <div className="modal-box">
-            <h3 style={{ fontSize: "1.4rem", marginBottom: "8px", color: "var(--dispute)" }}>
-              ⚖️ Raise Arbitration Dispute on Milestone {disputingIndex + 1}
+        <div className="modal-backdrop" onClick={() => setDisputingIndex(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: "1.3rem", marginBottom: "6px", color: "var(--dispute)" }}>
+              Raise Milestone Dispute
             </h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", marginBottom: "20px" }}>
-              The escrow will be frozen in the Soroban contract and transferred to the registered arbitrator for impartial review.
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "18px" }}>
+              This flags Milestone {disputingIndex + 1} on-chain and pauses payouts pending arbitration review.
             </p>
 
             <form onSubmit={handleDisputeSubmit}>
@@ -245,19 +250,19 @@ export function MilestoneTracker({
                 <textarea
                   className="form-textarea"
                   rows={3}
-                  placeholder="Detail the issue with milestone deliverables or responsiveness..."
+                  placeholder="Specify discrepancy between delivered work and milestone specifications…"
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
                   required
                 />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setDisputingIndex(null)}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setDisputingIndex(null)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-dispute">
-                  ⚠️ Freeze & Escalate to Arbitrator
+                <button type="submit" className="btn btn-dispute btn-sm">
+                  Lock &amp; Raise Dispute
                 </button>
               </div>
             </form>

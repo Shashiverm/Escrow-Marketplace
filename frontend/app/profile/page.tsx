@@ -8,9 +8,10 @@ import { store, Job, Bid } from "@/lib/store";
 import { getReputation } from "@/lib/contracts";
 import { truncateAddress } from "@/lib/stellar";
 
-type ProfileTab = "posted" | "bids" | "history";
+type ProfileTab = "posted" | "bids";
 
 export default function ProfilePage() {
+  const [mounted, setMounted] = useState(false);
   const { publicKey, balance, isConnected, connect, availableWallets } = useWallet();
   const [reputation, setReputation] = useState({
     jobsCompleted: 0,
@@ -25,6 +26,10 @@ export default function ProfilePage() {
   const [myBids, setMyBids] = useState<{ job: Job; bid: Bid }[]>([]);
   const [activeTab, setActiveTab] = useState<ProfileTab>("posted");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!publicKey) return;
@@ -64,24 +69,23 @@ export default function ProfilePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (!isConnected || !publicKey) {
+  if (!mounted || !isConnected || !publicKey) {
     return (
-      <div className="container" style={{ maxWidth: "640px", textAlign: "center", padding: "60px 0" }}>
-        <div className="card" style={{ padding: "48px 32px" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>👑</div>
-          <h2 style={{ fontSize: "1.8rem", marginBottom: "12px" }}>
-            Connect Wallet for <span className="gradient-gold-text">Developer Profile</span>
+      <div className="container" style={{ maxWidth: "560px", textAlign: "center", padding: "48px 16px" }}>
+        <div className="card" style={{ padding: "36px 24px" }}>
+          <h2 style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
+            Connect Stellar Wallet for <span className="gradient-gold-text">Profile</span>
           </h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: "28px", fontSize: "0.95rem" }}>
-            Connect your Stellar wallet to view on-chain reputation scores, active milestone escrows, posted jobs, and tier progression.
+          <p style={{ color: "var(--text-secondary)", marginBottom: "24px", fontSize: "0.9rem" }}>
+            Authenticate with your Stellar wallet to view on-chain reputation, active milestone escrows, and tier progression.
           </p>
 
-          <div style={{ display: "flex", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
             {availableWallets.map((w) => (
               <button
                 key={w.id}
                 onClick={() => connect(w.id)}
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm"
                 style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
               >
                 <span>{w.icon}</span> Connect {w.name}
@@ -94,55 +98,55 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: "1000px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "20px", marginBottom: "32px" }}>
+    <div className="container" style={{ maxWidth: "960px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px", marginBottom: "28px" }}>
         <div>
-          <span className="category-pill" style={{ marginBottom: "8px" }}>
+          <span className="category-pill" style={{ marginBottom: "6px" }}>
             Soroban On-Chain Identity
           </span>
-          <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.4rem)", marginTop: "4px" }}>
+          <h1 style={{ fontSize: "clamp(1.8rem, 4.5vw, 2.3rem)", marginTop: "4px" }}>
             Developer <span className="gradient-gold-text">Profile &amp; Reputation</span>
           </h1>
         </div>
-        <Link href="/jobs/new" className="btn btn-primary">
-          ➕ Post Job Contract
+        <Link href="/jobs/new" className="btn btn-primary btn-sm">
+          Post Project &rarr;
         </Link>
       </div>
 
       {/* Account Overview Box */}
-      <div className="card" style={{ marginBottom: "28px", padding: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+      <div className="card" style={{ marginBottom: "24px", padding: "18px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "14px" }}>
           <div>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
               Connected Address
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.9rem", color: "var(--gold-light)", fontWeight: 700 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.88rem", color: "var(--gold-light)", fontWeight: 700 }}>
                 {truncateAddress(publicKey, 8)}
               </span>
               <button
                 onClick={copyAddress}
-                className="btn btn-secondary"
-                style={{ padding: "4px 10px", fontSize: "0.75rem" }}
+                className="btn btn-secondary btn-sm"
+                style={{ padding: "3px 8px", fontSize: "0.72rem" }}
               >
-                {copied ? "✓ Copied" : "📋 Copy"}
+                {copied ? "✓ Copied" : "Copy"}
               </button>
             </div>
           </div>
 
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
               Wallet Balance
             </span>
-            <div style={{ fontSize: "1.5rem", fontWeight: 900, fontFamily: "var(--font-mono)", color: "var(--emerald-light)" }}>
-              {balance !== null ? balance.toLocaleString() : "..."} <small style={{ fontSize: "0.85rem" }}>XLM</small>
+            <div style={{ fontSize: "1.4rem", fontWeight: 900, fontFamily: "var(--font-mono)", color: "var(--emerald-light)" }}>
+              {balance !== null ? balance.toLocaleString() : "..."} <small style={{ fontSize: "0.8rem" }}>XLM</small>
             </div>
           </div>
         </div>
       </div>
 
       {/* Reputation Badge */}
-      <div style={{ marginBottom: "36px" }}>
+      <div style={{ marginBottom: "32px" }}>
         <ReputationBadge
           jobsCompleted={reputation.jobsCompleted}
           totalEarned={reputation.totalEarned}
@@ -155,13 +159,13 @@ export default function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid var(--border)", paddingBottom: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border)", paddingBottom: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
         <button
           onClick={() => setActiveTab("posted")}
           style={{
-            padding: "8px 16px",
+            padding: "6px 14px",
             borderRadius: "var(--radius-full)",
-            fontSize: "0.85rem",
+            fontSize: "0.82rem",
             fontWeight: 700,
             cursor: "pointer",
             border: "1px solid",
@@ -175,9 +179,9 @@ export default function ProfilePage() {
         <button
           onClick={() => setActiveTab("bids")}
           style={{
-            padding: "8px 16px",
+            padding: "6px 14px",
             borderRadius: "var(--radius-full)",
-            fontSize: "0.85rem",
+            fontSize: "0.82rem",
             fontWeight: 700,
             cursor: "pointer",
             border: "1px solid",
@@ -186,31 +190,31 @@ export default function ProfilePage() {
             color: activeTab === "bids" ? "var(--gold-light)" : "var(--text-secondary)",
           }}
         >
-          My Active Bids ({myBids.length})
+          My Submitted Proposals ({myBids.length})
         </button>
       </div>
 
       {/* Tab Content */}
       {activeTab === "posted" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {myJobs.length === 0 ? (
-            <div className="card" style={{ textAlign: "center", padding: "40px" }}>
-              <p style={{ color: "var(--text-secondary)" }}>You have not posted any escrow jobs yet.</p>
-              <Link href="/jobs/new" className="btn btn-primary" style={{ marginTop: "16px" }}>
-                ➕ Post Your First Escrow
+            <div className="card" style={{ textAlign: "center", padding: "36px 16px" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>You have not posted any escrow jobs yet.</p>
+              <Link href="/jobs/new" className="btn btn-primary btn-sm" style={{ marginTop: "14px" }}>
+                Post Your First Escrow
               </Link>
             </div>
           ) : (
             myJobs.map((job) => (
-              <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+              <div key={job.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", padding: "16px" }}>
                 <div>
-                  <span className="category-pill" style={{ marginBottom: "6px" }}>{job.category}</span>
-                  <h3 style={{ fontSize: "1.1rem" }}>{job.title}</h3>
-                  <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                    Budget: <strong>{job.budget.toLocaleString()} XLM</strong> · {job.milestoneCount} Milestones · Status: {job.status}
+                  <span className="category-pill" style={{ marginBottom: "4px" }}>{job.category}</span>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>{job.title}</h3>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                    Budget: <strong>{job.budget.toLocaleString()} XLM</strong> &middot; {job.milestoneCount} Milestones &middot; Status: {job.status}
                   </div>
                 </div>
-                <Link href={`/jobs/${job.id}`} className="btn btn-outline-gold" style={{ fontSize: "0.82rem", padding: "6px 14px" }}>
+                <Link href={`/jobs/${job.id}`} className="btn btn-outline-gold btn-sm">
                   Manage Escrow &rarr;
                 </Link>
               </div>
@@ -220,26 +224,26 @@ export default function ProfilePage() {
       )}
 
       {activeTab === "bids" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {myBids.length === 0 ? (
-            <div className="card" style={{ textAlign: "center", padding: "40px" }}>
-              <p style={{ color: "var(--text-secondary)" }}>You have not submitted any bids yet.</p>
-              <Link href="/jobs" className="btn btn-primary" style={{ marginTop: "16px" }}>
-                🔍 Browse Open Jobs
+            <div className="card" style={{ textAlign: "center", padding: "36px 16px" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem" }}>You have not submitted any proposals yet.</p>
+              <Link href="/jobs" className="btn btn-primary btn-sm" style={{ marginTop: "14px" }}>
+                Browse Open Escrows
               </Link>
             </div>
           ) : (
             myBids.map(({ job, bid }) => (
-              <div key={bid.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+              <div key={bid.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", padding: "16px" }}>
                 <div>
-                  <h3 style={{ fontSize: "1.1rem" }}>{job.title}</h3>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "2px" }}>{bid.proposal}</p>
-                  <div style={{ fontSize: "0.82rem", color: "var(--gold-light)", fontWeight: 700, marginTop: "4px" }}>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>{job.title}</h3>
+                  <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)", marginTop: "2px" }}>{bid.proposal}</p>
+                  <div style={{ fontSize: "0.8rem", color: "var(--gold-light)", fontWeight: 700, marginTop: "4px" }}>
                     Your Bid: {bid.amount.toLocaleString()} XLM ({bid.status})
                   </div>
                 </div>
-                <Link href={`/jobs/${job.id}`} className="btn btn-outline-gold" style={{ fontSize: "0.82rem", padding: "6px 14px" }}>
-                  View Job &rarr;
+                <Link href={`/jobs/${job.id}`} className="btn btn-outline-gold btn-sm">
+                  View Escrow &rarr;
                 </Link>
               </div>
             ))

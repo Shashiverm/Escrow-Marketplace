@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { WalletModal } from "./WalletModal";
 import { WalletType } from "@/lib/wallets";
 
-const WALLET_ICONS: Record<WalletType, string> = {
-  freighter: "🚀",
-  xbull: "🐂",
-  lobstr: "🦞",
-  albedo: "⚡",
-  rabet: "🐰",
+const WALLET_NAMES: Record<WalletType, string> = {
+  freighter: "Freighter",
+  xbull: "xBull",
+  lobstr: "Lobstr",
+  albedo: "Albedo",
+  rabet: "Rabet",
 };
 
 export function WalletConnect() {
+  const [mounted, setMounted] = useState(false);
   const {
     publicKey,
     balance,
@@ -27,6 +28,10 @@ export function WalletConnect() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   function truncateAddress(addr: string): string {
     return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
   }
@@ -38,33 +43,45 @@ export function WalletConnect() {
     }
   }
 
-  if (publicKey) {
-    const icon = walletType ? WALLET_ICONS[walletType] : "⚡";
+  if (!mounted) {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <button
+        className="btn btn-primary btn-sm"
+        id="wallet-connect-btn"
+      >
+        Connect Wallet
+      </button>
+    );
+  }
+
+  if (publicKey) {
+    const walletLabel = walletType ? WALLET_NAMES[walletType] : "Wallet";
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
         <div
           style={{
-            padding: "6px 12px",
-            borderRadius: "var(--radius-full, 9999px)",
-            background: "var(--bg-glass, rgba(255,255,255,0.05))",
-            border: "1px solid var(--border-light, rgba(255,255,255,0.1))",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            color: "var(--cyan-light, #38bdf8)",
+            padding: "5px 10px",
+            borderRadius: "var(--radius-full)",
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--border)",
+            fontSize: "0.8rem",
+            fontWeight: 700,
+            color: "var(--gold-light)",
+            fontFamily: "var(--font-mono)",
           }}
         >
           {balance.toLocaleString()} XLM
         </div>
 
         <button
-          className="btn btn-secondary btn-sm wallet-btn connected"
+          className="btn btn-secondary btn-sm"
           onClick={disconnect}
-          title={`Connected via ${walletType || "Wallet"}: ${publicKey}\nClick to Disconnect`}
+          title={`Connected via ${walletLabel}: ${publicKey}\nClick to Disconnect`}
           id="wallet-disconnect-btn"
           style={{ display: "flex", alignItems: "center", gap: "6px" }}
         >
-          <span>{icon}</span>
-          <span className="wallet-address">{truncateAddress(publicKey)}</span>
+          <span className="network-dot" style={{ width: "6px", height: "6px" }} />
+          <span style={{ fontFamily: "var(--font-mono)" }}>{truncateAddress(publicKey)}</span>
         </button>
       </div>
     );
@@ -73,7 +90,7 @@ export function WalletConnect() {
   return (
     <>
       <button
-        className="btn btn-primary btn-sm wallet-btn"
+        className="btn btn-primary btn-sm"
         onClick={() => setIsModalOpen(true)}
         disabled={isLoading}
         id="wallet-connect-btn"

@@ -1,6 +1,8 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
+import { truncateAddress } from "@/lib/stellar";
 
 interface JobCardProps {
   id: number;
@@ -16,10 +18,10 @@ interface JobCardProps {
 }
 
 const STATUS_MAP = {
-  open: { label: "Open for Bids", color: "var(--emerald-light)", bg: "var(--success-bg)", border: "var(--border-emerald)" },
+  open: { label: "Open for Bids", color: "var(--emerald-light)", bg: "var(--emerald-subtle)", border: "var(--border-emerald)" },
   progress: { label: "In Escrow", color: "var(--gold-light)", bg: "var(--gold-subtle)", border: "var(--border-gold)" },
-  completed: { label: "Settled & Verified", color: "var(--violet-light)", bg: "var(--violet-subtle)", border: "rgba(168, 85, 247, 0.3)" },
-  disputed: { label: "In Arbitration", color: "var(--dispute)", bg: "var(--dispute-bg)", border: "rgba(244, 63, 94, 0.4)" },
+  completed: { label: "Settled", color: "var(--violet-light)", bg: "var(--violet-subtle)", border: "rgba(139, 92, 246, 0.3)" },
+  disputed: { label: "Disputed", color: "var(--dispute)", bg: "var(--dispute-bg)", border: "var(--dispute-border)" },
   cancelled: { label: "Refunded", color: "var(--text-muted)", bg: "rgba(255, 255, 255, 0.05)", border: "var(--border)" },
 };
 
@@ -37,64 +39,66 @@ export function JobCard({
 }: JobCardProps) {
   const statusInfo = STATUS_MAP[status] || STATUS_MAP.open;
 
-  function truncateAddress(addr: string) {
-    if (!addr) return "G...";
-    return `${addr.slice(0, 4)}…${addr.slice(-4)}`;
-  }
-
   return (
     <Link href={`/jobs/${id}`} style={{ textDecoration: "none", display: "block" }}>
       <div className="card job-card" id={`job-card-${id}`}>
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
             <span className="category-pill">{category}</span>
             <span
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
-                padding: "4px 10px",
+                gap: "5px",
+                padding: "3px 8px",
                 borderRadius: "var(--radius-full)",
-                fontSize: "0.75rem",
+                fontSize: "0.72rem",
                 fontWeight: 700,
                 color: statusInfo.color,
                 background: statusInfo.bg,
                 border: `1px solid ${statusInfo.border}`,
               }}
             >
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: statusInfo.color }} />
+              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: statusInfo.color }} />
               {statusInfo.label}
             </span>
           </div>
 
-          <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--text-primary)", marginBottom: "8px", lineHeight: "1.3" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--text-primary)", marginBottom: "8px", lineHeight: "1.35" }}>
             {title}
           </h3>
 
-          <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginBottom: "16px", lineHeight: "1.5", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          <p style={{ fontSize: "0.86rem", color: "var(--text-secondary)", marginBottom: "14px", lineHeight: "1.5", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
             {description}
           </p>
 
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "18px" }}>
-            <span>🎯 {milestones} Milestone{milestones > 1 ? "s" : ""}</span>
-            <span>💬 {bidCount} Bid{bidCount !== 1 ? "s" : ""}</span>
-            {deadline && <span>⏱️ Deadline: {deadline}</span>}
-            <span title={client}>👤 {truncateAddress(client)}</span>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "16px" }}>
+            <span>{milestones} Milestone{milestones > 1 ? "s" : ""}</span>
+            <span>&middot;</span>
+            <span>{bidCount} Bid{bidCount !== 1 ? "s" : ""}</span>
+            {deadline && (
+              <>
+                <span>&middot;</span>
+                <span>Due: {deadline}</span>
+              </>
+            )}
+            <span>&middot;</span>
+            <span style={{ fontFamily: "var(--font-mono)" }}>Client: {truncateAddress(client, 4)}</span>
           </div>
         </div>
 
-        <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>
-              Escrow Payout
+            <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block", letterSpacing: "0.04em", fontWeight: 700 }}>
+              Escrow Value
             </span>
             <span className="job-budget-badge">
-              {budget.toLocaleString()} <small style={{ fontSize: "0.85rem", color: "var(--gold)" }}>XLM</small>
+              {budget.toLocaleString()} <small style={{ fontSize: "0.8rem", color: "var(--gold)", fontWeight: 700 }}>XLM</small>
             </span>
           </div>
 
-          <span className="btn btn-outline-gold" style={{ padding: "6px 14px", fontSize: "0.82rem" }}>
-            View Escrow &rarr;
+          <span className="btn btn-outline-gold btn-sm">
+            Inspect Escrow &rarr;
           </span>
         </div>
       </div>

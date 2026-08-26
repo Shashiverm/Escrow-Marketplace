@@ -52,20 +52,20 @@ export function WalletModal({
           aria-label="Close modal"
           id="close-wallet-modal-btn"
         >
-          &times;
+          ✕
         </button>
 
         <div className="wallet-modal-header">
-          <div className="wallet-modal-badge">✨ Stellar Soroban Wallets</div>
+          <div className="wallet-modal-badge">Stellar Soroban Wallets</div>
           <h2 className="wallet-modal-title">Connect Wallet</h2>
           <p className="wallet-modal-desc">
-            Select your preferred wallet to authenticate and sign escrow transactions on Stellar.
+            Authenticate and sign non-custodial escrow transactions directly on Stellar.
           </p>
         </div>
 
         {error && (
           <div className="wallet-modal-error">
-            <span>⚠️</span> {error}
+            {error}
           </div>
         )}
 
@@ -88,7 +88,7 @@ export function WalletModal({
 
               <span
                 className={`wallet-option-badge ${
-                  wallet.isAvailable ? "available" : "install"
+                  wallet.isAvailable ? "available" : ""
                 }`}
               >
                 {wallet.isAvailable ? "Connect" : "Available"}
@@ -98,7 +98,7 @@ export function WalletModal({
         </div>
 
         <div className="wallet-modal-footer">
-          ⚡ Connected to Stellar Testnet &middot; Non-custodial Smart Contract Escrow
+          Soroban Testnet &middot; Non-Custodial Smart Contracts
         </div>
       </div>
     </div>

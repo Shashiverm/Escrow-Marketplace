@@ -100,35 +100,35 @@ export default function PostJobPage() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: "800px" }}>
-      <div style={{ marginBottom: "28px", textAlign: "center" }}>
-        <span className="category-pill" style={{ marginBottom: "8px" }}>
+    <div className="container" style={{ maxWidth: "760px" }}>
+      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+        <span className="category-pill" style={{ marginBottom: "6px" }}>
           Soroban Escrow Protocol
         </span>
-        <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.4rem)", marginTop: "4px" }}>
-          Initialize <span className="gradient-gold-text">Milestone Escrow Job</span>
+        <h1 style={{ fontSize: "clamp(1.8rem, 4.5vw, 2.3rem)", marginTop: "4px" }}>
+          Initialize <span className="gradient-gold-text">Milestone Escrow</span>
         </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-          Deploy a new job onto the Stellar Soroban Job Registry with custom milestone payouts.
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+          Deploy a project onto the Stellar Soroban Job Registry with custom milestone payouts.
         </p>
       </div>
 
       {/* Stepper */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px", gap: "8px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px", gap: "8px", flexWrap: "wrap" }}>
         <div
           onClick={() => setCurrentStep(1)}
           style={{
             flex: 1,
-            minWidth: "120px",
-            padding: "10px",
+            minWidth: "100px",
+            padding: "8px 12px",
             borderRadius: "var(--radius-md)",
-            background: currentStep >= 1 ? "var(--gold-subtle)" : "rgba(255,255,255,0.03)",
+            background: currentStep >= 1 ? "var(--gold-subtle)" : "var(--bg-tertiary)",
             border: `1px solid ${currentStep >= 1 ? "var(--gold)" : "var(--border)"}`,
             textAlign: "center",
             cursor: "pointer",
             color: currentStep >= 1 ? "var(--gold-light)" : "var(--text-muted)",
             fontWeight: 700,
-            fontSize: "0.85rem",
+            fontSize: "0.82rem",
           }}
         >
           1. Scope
@@ -138,16 +138,16 @@ export default function PostJobPage() {
           onClick={() => setCurrentStep(2)}
           style={{
             flex: 1,
-            minWidth: "120px",
-            padding: "10px",
+            minWidth: "100px",
+            padding: "8px 12px",
             borderRadius: "var(--radius-md)",
-            background: currentStep >= 2 ? "var(--gold-subtle)" : "rgba(255,255,255,0.03)",
+            background: currentStep >= 2 ? "var(--gold-subtle)" : "var(--bg-tertiary)",
             border: `1px solid ${currentStep >= 2 ? "var(--gold)" : "var(--border)"}`,
             textAlign: "center",
             cursor: "pointer",
             color: currentStep >= 2 ? "var(--gold-light)" : "var(--text-muted)",
             fontWeight: 700,
-            fontSize: "0.85rem",
+            fontSize: "0.82rem",
           }}
         >
           2. Milestones
@@ -157,16 +157,16 @@ export default function PostJobPage() {
           onClick={() => setCurrentStep(3)}
           style={{
             flex: 1,
-            minWidth: "120px",
-            padding: "10px",
+            minWidth: "100px",
+            padding: "8px 12px",
             borderRadius: "var(--radius-md)",
-            background: currentStep >= 3 ? "var(--gold-subtle)" : "rgba(255,255,255,0.03)",
+            background: currentStep >= 3 ? "var(--gold-subtle)" : "var(--bg-tertiary)",
             border: `1px solid ${currentStep >= 3 ? "var(--gold)" : "var(--border)"}`,
             textAlign: "center",
             cursor: "pointer",
             color: currentStep >= 3 ? "var(--gold-light)" : "var(--text-muted)",
             fontWeight: 700,
-            fontSize: "0.85rem",
+            fontSize: "0.82rem",
           }}
         >
           3. Deploy
@@ -174,16 +174,17 @@ export default function PostJobPage() {
       </div>
 
       {/* Form Card */}
-      <div className="card" style={{ padding: "clamp(20px, 4vw, 36px)" }}>
+      <div className="card" style={{ padding: "clamp(18px, 4vw, 32px)" }}>
         {error && (
           <div
             style={{
-              padding: "12px 16px",
+              padding: "10px 14px",
               borderRadius: "var(--radius-md)",
               background: "var(--error-bg)",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
               color: "#f87171",
-              marginBottom: "20px",
+              marginBottom: "18px",
+              fontSize: "0.85rem",
             }}
           >
             {error}
@@ -221,11 +222,11 @@ export default function PostJobPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Detailed Scope & Requirements</label>
+                <label className="form-label">Detailed Scope &amp; Requirements</label>
                 <textarea
                   className="form-textarea"
-                  rows={5}
-                  placeholder="Detail the technical specifications, requirements, expected deliverables, and repo links..."
+                  rows={4}
+                  placeholder="Detail technical specifications, expected deliverables, and repo links…"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
@@ -250,7 +251,7 @@ export default function PostJobPage() {
 
           {currentStep === 2 && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Total Budget (XLM)</label>
                   <input
@@ -267,7 +268,7 @@ export default function PostJobPage() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Milestones</label>
+                  <label className="form-label">Milestone Count</label>
                   <input
                     type="number"
                     className="form-input"
@@ -280,11 +281,11 @@ export default function PostJobPage() {
                 </div>
               </div>
 
-              <h4 style={{ fontSize: "1rem", color: "var(--gold-light)", marginBottom: "12px" }}>
-                Custom Milestone Allocation
+              <h4 style={{ fontSize: "0.95rem", color: "var(--gold-light)", marginBottom: "10px", fontWeight: 700 }}>
+                Milestone Allocation
               </h4>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
                 {customMilestones.map((m, idx) => (
                   <div
                     key={idx}
@@ -293,7 +294,7 @@ export default function PostJobPage() {
                       gridTemplateColumns: "2fr 1fr",
                       gap: "8px",
                       background: "var(--bg-tertiary)",
-                      padding: "12px",
+                      padding: "10px",
                       borderRadius: "var(--radius-md)",
                     }}
                   >
@@ -315,11 +316,11 @@ export default function PostJobPage() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setCurrentStep(1)}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCurrentStep(1)}>
                   &larr; Back
                 </button>
-                <button type="button" className="btn btn-primary" onClick={() => setCurrentStep(3)}>
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => setCurrentStep(3)}>
                   Next: Review &rarr;
                 </button>
               </div>
@@ -328,28 +329,28 @@ export default function PostJobPage() {
 
           {currentStep === 3 && (
             <>
-              <h3 style={{ fontSize: "1.2rem", marginBottom: "16px" }}>Contract Deployment Summary</h3>
+              <h3 style={{ fontSize: "1.15rem", marginBottom: "14px" }}>Contract Deployment Summary</h3>
 
-              <div style={{ background: "var(--bg-tertiary)", padding: "16px", borderRadius: "var(--radius-md)", marginBottom: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ background: "var(--bg-tertiary)", padding: "14px", borderRadius: "var(--radius-md)", marginBottom: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 <div>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", textTransform: "uppercase" }}>Title:</span>
-                  <div style={{ fontWeight: 800 }}>{title}</div>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Title</span>
+                  <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>{title}</div>
                 </div>
                 <div>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", textTransform: "uppercase" }}>Category:</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Category</span>
                   <div><span className="category-pill">{category}</span></div>
                 </div>
                 <div>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", textTransform: "uppercase" }}>Total Budget:</span>
-                  <div style={{ fontWeight: 800, color: "var(--gold-light)", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Total Escrow Budget</span>
+                  <div style={{ fontWeight: 800, color: "var(--gold-light)", fontFamily: "var(--font-mono)", fontSize: "1.05rem" }}>
                     {parseInt(budget).toLocaleString()} XLM
                   </div>
                 </div>
                 <div>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", textTransform: "uppercase" }}>Milestones:</span>
-                  <div style={{ fontSize: "0.9rem" }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Milestone Schedule</span>
+                  <div style={{ fontSize: "0.85rem", marginTop: "2px" }}>
                     {customMilestones.map((m, i) => (
-                      <div key={i}>• {m.title}: <strong>{m.amount.toLocaleString()} XLM</strong></div>
+                      <div key={i}>&bull; {m.title}: <strong>{m.amount.toLocaleString()} XLM</strong></div>
                     ))}
                   </div>
                 </div>
@@ -358,21 +359,21 @@ export default function PostJobPage() {
               {!isConnected && (
                 <div
                   style={{
-                    padding: "12px 16px",
+                    padding: "10px 14px",
                     borderRadius: "var(--radius-md)",
                     background: "var(--gold-subtle)",
                     border: "1px solid var(--border-gold)",
                     color: "var(--gold-light)",
-                    fontSize: "0.85rem",
-                    marginBottom: "20px",
+                    fontSize: "0.82rem",
+                    marginBottom: "16px",
                   }}
                 >
-                  ⚡ Please connect your Freighter wallet to sign and post to Soroban Testnet.
+                  Please connect your Stellar wallet to sign and post to Soroban Testnet.
                 </div>
               )}
 
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setCurrentStep(2)}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCurrentStep(2)}>
                   &larr; Back
                 </button>
                 <button
@@ -380,7 +381,7 @@ export default function PostJobPage() {
                   className="btn btn-primary"
                   disabled={isSubmitting || !isConnected}
                 >
-                  {isSubmitting ? "Deploying on Soroban..." : "🚀 Sign & Deploy Escrow Contract"}
+                  {isSubmitting ? "Deploying on Soroban…" : "Sign & Deploy Escrow"}
                 </button>
               </div>
             </>

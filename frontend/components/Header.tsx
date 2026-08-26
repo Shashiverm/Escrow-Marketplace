@@ -39,7 +39,7 @@ export function Header() {
             href="/leaderboard"
             className={`nav-link ${isActive("/leaderboard") ? "active" : ""}`}
           >
-            🏆 Leaderboard
+            Leaderboard
           </Link>
           <Link
             href="/jobs/new"
@@ -69,37 +69,37 @@ export function Header() {
 
       {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
-        <div className="mobile-menu-drawer" style={{ background: "var(--bg-secondary)", padding: "16px", borderBottom: "1px solid var(--border-gold)" }}>
-          <div className="container mobile-menu-content" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div className="mobile-menu-drawer">
+          <div className="container" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <Link
               href="/jobs"
               className={`mobile-nav-link ${isActive("/jobs") && !pathname.includes("/jobs/new") ? "active" : ""}`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              🔍 Browse Jobs
+              Browse Escrows
             </Link>
             <Link
               href="/leaderboard"
               className={`mobile-nav-link ${isActive("/leaderboard") ? "active" : ""}`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              🏆 Talent Leaderboard
+              Talent Leaderboard
             </Link>
             <Link
               href="/jobs/new"
               className={`mobile-nav-link ${isActive("/jobs/new") ? "active" : ""}`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              ➕ Post a Job
+              Post Project
             </Link>
             <Link
               href="/profile"
               className={`mobile-nav-link ${isActive("/profile") ? "active" : ""}`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              👤 My Profile
+              My Profile
             </Link>
-            <div className="mobile-wallet-wrapper" style={{ marginTop: "8px" }}>
+            <div style={{ marginTop: "6px" }}>
               <WalletConnect />
             </div>
           </div>

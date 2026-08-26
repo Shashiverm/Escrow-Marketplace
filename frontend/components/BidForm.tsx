@@ -54,20 +54,21 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
 
   if (submitted) {
     return (
-      <div className="card card-emerald" style={{ textAlign: "center", padding: "24px" }}>
-        <div style={{ fontSize: "2.2rem", marginBottom: "8px" }}>🎉</div>
-        <h3 style={{ marginBottom: "4px", color: "var(--emerald-light)" }}>Bid Successfully Placed!</h3>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "14px" }}>
-          Your bid of {parseInt(amount).toLocaleString()} XLM ({estimatedDays} days delivery) has been recorded in the Soroban Job Registry.
+      <div className="card card-emerald" style={{ textAlign: "center", padding: "20px" }}>
+        <h3 style={{ marginBottom: "4px", color: "var(--emerald-light)", fontSize: "1.15rem" }}>
+          Bid Submitted to Soroban Registry
+        </h3>
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "12px" }}>
+          Your proposal for {parseInt(amount).toLocaleString()} XLM ({estimatedDays} days) has been recorded on the Stellar ledger.
         </p>
         {txHash && (
           <a
             href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: "0.82rem", color: "var(--gold-light)", wordBreak: "break-all" }}
+            style={{ fontSize: "0.8rem", color: "var(--gold-light)", wordBreak: "break-all" }}
           >
-            View Transaction on Stellar Expert &rarr;
+            View Transaction on StellarExpert ↗
           </a>
         )}
       </div>
@@ -80,12 +81,12 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
         <div
           style={{
             padding: "10px 14px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-md)",
             background: "var(--error-bg)",
             border: "1px solid rgba(239, 68, 68, 0.3)",
             color: "#f87171",
-            fontSize: "0.85rem",
-            marginBottom: "16px",
+            fontSize: "0.82rem",
+            marginBottom: "14px",
           }}
         >
           {error}
@@ -96,19 +97,19 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
         <div
           style={{
             padding: "10px 14px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-md)",
             background: "var(--gold-subtle)",
             border: "1px solid var(--border-gold)",
             color: "var(--gold-light)",
-            fontSize: "0.85rem",
-            marginBottom: "16px",
+            fontSize: "0.82rem",
+            marginBottom: "14px",
           }}
         >
-          ⚡ Connect your Freighter / Stellar wallet to submit a cryptographic bid.
+          Connect your Stellar wallet to submit a cryptographic bid.
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label" htmlFor={`bid-amount-${jobId}`}>
             Bid Amount (XLM)
@@ -127,7 +128,7 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
 
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label" htmlFor={`bid-days-${jobId}`}>
-            Estimated Days
+            Delivery (Days)
           </label>
           <input
             id={`bid-days-${jobId}`}
@@ -145,13 +146,13 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
 
       <div className="form-group">
         <label className="form-label" htmlFor={`bid-proposal-${jobId}`}>
-          Proposal & Technical Approach
+          Proposal &amp; Technical Approach
         </label>
         <textarea
           id={`bid-proposal-${jobId}`}
           className="form-textarea"
-          rows={4}
-          placeholder="Describe your qualifications, Soroban / Rust experience, and milestone deliverables…"
+          rows={3}
+          placeholder="Outline your architectural plan, deliverable milestones, and Soroban contract experience…"
           value={proposal}
           onChange={(e) => setProposal(e.target.value)}
           required
@@ -165,7 +166,7 @@ export function BidForm({ jobId, jobBudget, onBidSubmitted }: BidFormProps) {
         style={{ width: "100%" }}
         id={`bid-submit-${jobId}`}
       >
-        {isSubmitting ? "Signing & Submitting on Soroban…" : "🚀 Submit Bid with Connected Wallet"}
+        {isSubmitting ? "Signing & Submitting on Soroban…" : "Submit Proposal"}
       </button>
     </form>
   );
